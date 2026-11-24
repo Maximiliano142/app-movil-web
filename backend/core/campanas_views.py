@@ -1,0 +1,150 @@
+"""Campañas: elegir con cuál trabajar (superusuario o quien puede ver
+campañas) y crearlas o desactivarlas desde esa misma pantalla."""
+
+from django.db.models import Count, ProtectedError
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.views.decorators.http import require_http_methods
+
+from .api import (
+    SESION_CAMPANA,
+    campanas_disponibles,
+    crud,
+    error,
+    leer_json,
+    puede_elegir_campana,
+    requiere_permiso,
+    requiere_sesion,
+)
+from .bitacora import diferencias, registrar
+from .models import Campana
+from .validaciones import nombre_cosa
+from .views import usuario_json
+
+
+def _foto(c):
+    return {
+        "Nombre": c.nombre,
+        "Descripción": c.descripcion or "",
+        "Activa": "Sí" if c.activa else "No",
+    }
+
+
+def _campana_json(c):
+    return {
+        "id": c.pk,
+        "nombre": c.nombre,
+        "descripcion": c.descripcion or "",
+        "activa": c.activa,
+        "cuestionarios": getattr(c, "n_cuestionarios", None),
+        "usuarios": getattr(c, "n_usuarios", None),
+        "rutas": getattr(c, "n_rutas", None),
+    }
+
+
+def _con_conteos(consulta):
+    return consulta.annotate(
+        # Cuestionarios asignados a usuarios de la campaña (usuarios → usuariosxcuestionarios)
+        n_cuestionarios=Count("usuarios__cuestionarios_asignados", distinct=True),
+        n_usuarios=Count("usuarios", distinct=True),
+        # Rutas de la campaña: las de los equipos de sus usuarios (usuarios → equipos → rutas)
+        n_rutas=Count("usuarios__equipo__ruta", distinct=True),
+    )
+
+
+@require_http_methods(["GET"])
+@requiere_sesion
+def disponibles(request):
+    """Campañas a las que puede entrar el usuario (pantalla "Seleccione la campaña")."""
+    lista = _con_conteos(campanas_disponibles(request.user)).order_by("nombre")
+    return JsonResponse({"campanas": [_campana_json(c) for c in lista]})
+
+
+@require_http_methods(["POST", "DELETE"])
+@requiere_sesion
+def activa(request):
+    """POST {campana}: entra a esa campaña. DELETE: vuelve a la pantalla de elegir."""
+    if not puede_elegir_campana(request.user):
+        return error("No tiene permiso para cambiar de campaña.", 403)
+    if request.method == "DELETE":
+        request.session.pop(SESION_CAMPANA, None)
+        return JsonResponse({"usuario": usuario_json(request)})
+    datos = leer_json(request) or {}
+    campana = campanas_disponibles(request.user).filter(pk=datos.get("campana")).first()
+    if campana is None:
+        return error("La campaña no existe o no está activa.")
+    request.session[SESION_CAMPANA] = campana.pk
+    return JsonResponse({"usuario": usuario_json(request)})
+
+
+def _validar(datos, campana=None):
+    nombre = datos.get("nombre", campana.nombre if campana else "")
+    if not isinstance(nombre, str) or not nombre.strip():
+        return None, "Ingrese el nombre de la campaña."
+    nombre = nombre.strip()[:150]
+    mensaje = nombre_cosa(nombre)
+    if mensaje:
+        return None, mensaje
+    repetida = Campana.objects.filter(nombre__iexact=nombre)
+    if campana:
+        repetida = repetida.exclude(pk=campana.pk)
+    if repetida.exists():
+        return None, "Ya existe una campaña con ese nombre."
+    activa_ = datos.get("activa", campana.activa if campana else True)
+    if not isinstance(activa_, bool):
+        return None, "El estado no es válido."
+    descripcion = datos.get("descripcion", campana.descripcion if campana else "") or ""
+    return {
+        "nombre": nombre,
+        "descripcion": str(descripcion).strip() or None,
+        "activa": activa_,
+    }, None
+
+
+@require_http_methods(["GET", "POST"])
+@requiere_permiso(crud("campana"), campana=False)
+def campanas(request):
+    if request.method == "GET":
+        lista = _con_conteos(Campana.objects.all())
+        return JsonResponse({"campanas": [_campana_json(c) for c in lista]})
+
+    datos = leer_json(request)
+    if datos is None:
+        return error("Los datos enviados no son válidos.")
+    limpios, mensaje = _validar(datos)
+    if mensaje:
+        return error(mensaje)
+    campana = Campana.objects.create(**limpios)
+    registrar(request, campana, "crear", campana=campana, detalle=f"Creó la campaña {campana.nombre}")
+    return JsonResponse({"campana": _campana_json(campana)}, status=201)
+
+
+@require_http_methods(["PATCH", "DELETE"])
+@requiere_permiso(crud("campana"), campana=False)
+def campana_detalle(request, pk):
+    campana = get_object_or_404(Campana, pk=pk)
+    if request.method == "DELETE":
+        try:
+            campana.delete()
+        except ProtectedError:
+            return error(
+                "No se puede eliminar la campaña porque tiene datos cargados. Puede desactivarla.",
+                409,
+            )
+        registrar(request, campana, "borrar", campana=None, detalle=f"Borró la campaña {campana.nombre}")
+        return JsonResponse({"ok": True})
+
+    datos = leer_json(request)
+    if datos is None:
+        return error("Los datos enviados no son válidos.")
+    limpios, mensaje = _validar(datos, campana)
+    if mensaje:
+        return error(mensaje)
+    antes = _foto(campana)
+    for campo, valor in limpios.items():
+        setattr(campana, campo, valor)
+    campana.save()
+    cambios = diferencias(antes, _foto(campana))
+    if cambios:
+        registrar(request, campana, "editar", cambios=cambios, campana=campana)
+    return JsonResponse({"campana": _campana_json(campana)})

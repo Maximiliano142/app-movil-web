@@ -1,0 +1,288 @@
+"""Carga de encuestas (vista del militante) y estadísticas por pregunta
+(vista de la administración)."""
+
+from datetime import date, timedelta
+
+from django.db import IntegrityError, transaction
+from django.db.models import Count
+from django.db.models.functions import TruncDate
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
+from django.views.decorators.http import require_http_methods
+
+from . import graficos
+from .cuestionarios_views import cuestionarios_de_campana
+from .api import error, leer_json, permisos_de, requiere_permiso
+from .bitacora import registrar
+from .models import AsignacionCuestionario, Encuesta, Encuestado, Pregunta, RespuestaCargada
+from .validaciones import documento as validar_documento
+from .validaciones import espacios, nombre_persona
+
+
+
+def _cuestionario_para_responder(c):
+    return {
+        "id": c.pk,
+        "titulo": c.titulo,
+        "descripcion": c.descripcion or "",
+        "categoria": c.categoria.nombre,
+        "preguntas": [
+            {
+                "id": p.pk,
+                "enunciado": p.enunciado,
+                "tipo": p.tipo,
+                "obligatoria": p.obligatoria,
+                "opciones": [{"id": o.pk, "texto": o.texto} for o in p.opciones.all()],
+            }
+            for p in c.preguntas.prefetch_related("opciones")
+        ],
+    }
+
+
+def _para_responder(request):
+    """Cuestionarios activos de la campaña que el usuario puede responder: los
+    que tiene asignados. Quien administra cuestionarios los ve todos."""
+    lista = cuestionarios_de_campana(request.campana).filter(activo=True)
+    if "core.view_cuestionario" not in permisos_de(request.user):
+        lista = lista.filter(usuarios=request.user)
+    return lista
+
+
+@require_http_methods(["GET"])
+@requiere_permiso("core.add_encuesta")
+def cuestionarios_para_responder(request):
+    lista = _para_responder(request).select_related("categoria").order_by("titulo")
+    return JsonResponse({
+        "cuestionarios": [
+            {
+                "id": c.pk,
+                "titulo": c.titulo,
+                "descripcion": c.descripcion or "",
+                "categoria": c.categoria.nombre,
+                "preguntas": c.preguntas.count(),
+            }
+            for c in lista
+        ]
+    })
+
+
+class RespuestaInvalida(Exception):
+    pass
+
+
+def _limpiar_encuestado(datos):
+    if not isinstance(datos, dict):
+        raise RespuestaInvalida("Ingrese los datos de la persona encuestada.")
+    documento = str(datos.get("documento") or "").replace(".", "").replace(" ", "").strip()
+    if not documento:
+        raise RespuestaInvalida("Ingrese el documento de la persona encuestada.")
+    mensaje = validar_documento(documento)
+    if mensaje:
+        raise RespuestaInvalida(mensaje)
+    limpio = {"documento": documento}
+    # A la persona encuestada solo se le pide documento, nombre y apellido
+    for campo, etiqueta, maximo in (("nombre", "El nombre", 100), ("apellido", "El apellido", 100)):
+        valor = espacios(str(datos.get(campo) or ""))[:maximo]
+        mensaje = nombre_persona(valor, etiqueta)
+        if mensaje:
+            raise RespuestaInvalida(mensaje)
+        if valor:
+            limpio[campo] = valor
+    return limpio
+
+
+def _limpiar_respuestas(cuestionario, respuestas):
+    """Cada respuesta es {pregunta, opciones: [ids]}. "Una sola opción" admite
+    exactamente una; "opción múltiple", una o más."""
+    if not isinstance(respuestas, list):
+        raise RespuestaInvalida("Las respuestas no son válidas.")
+    por_pregunta = {}
+    for r in respuestas:
+        if isinstance(r, dict) and r.get("pregunta") is not None:
+            por_pregunta[r["pregunta"]] = r.get("opciones") or []
+
+    limpias = []
+    for n, pregunta in enumerate(cuestionario.preguntas.prefetch_related("opciones"), start=1):
+        elegidas = por_pregunta.get(pregunta.pk, [])
+        if not isinstance(elegidas, list):
+            raise RespuestaInvalida(f"La respuesta de la pregunta {n} no es válida.")
+        elegidas = list(dict.fromkeys(elegidas))  # sin repetidas, en orden
+        if not elegidas:
+            if pregunta.obligatoria:
+                raise RespuestaInvalida(f"Falta responder la pregunta {n}.")
+            continue
+        if pregunta.tipo == Pregunta.Tipo.UNA_OPCION and len(elegidas) > 1:
+            raise RespuestaInvalida(f"En la pregunta {n} se elige una sola opción.")
+        validas = {o.pk for o in pregunta.opciones.all()}
+        if not all(o in validas for o in elegidas):
+            raise RespuestaInvalida(f"La opción elegida en la pregunta {n} no es válida.")
+        limpias += [RespuestaCargada(opcion_id=o) for o in elegidas]
+    return limpias
+
+
+@require_http_methods(["GET", "POST"])
+@requiere_permiso("core.add_encuesta")
+def responder(request, pk):
+    cuestionario = get_object_or_404(_para_responder(request).select_related("categoria"), pk=pk)
+    if request.method == "GET":
+        return JsonResponse({"cuestionario": _cuestionario_para_responder(cuestionario)})
+
+    datos = leer_json(request)
+    if datos is None:
+        return error("Los datos enviados no son válidos.")
+    try:
+        encuestado_datos = _limpiar_encuestado(datos.get("encuestado"))
+        respuestas = _limpiar_respuestas(cuestionario, datos.get("respuestas"))
+    except RespuestaInvalida as e:
+        return error(str(e))
+    if not respuestas:
+        return error("Responda al menos una pregunta.")
+
+    documento = encuestado_datos.pop("documento")
+    try:
+        with transaction.atomic():
+            encuestado, creado = Encuestado.objects.get_or_create(documento=documento, defaults=encuestado_datos)
+            if not creado and encuestado_datos:
+                # Completa o actualiza los datos que se cargaron ahora
+                for campo, valor in encuestado_datos.items():
+                    setattr(encuestado, campo, valor)
+                encuestado.save()
+            # encuestas.(id_usuario, id_cuestionario) es FK a usuariosxcuestionarios:
+            # quien carga sin estar asignado (por ejemplo, quien administra) queda asignado
+            AsignacionCuestionario.objects.get_or_create(usuario=request.user, cuestionario=cuestionario)
+            encuesta = Encuesta.objects.create(
+                encuestado=encuestado,
+                cuestionario=cuestionario,
+                usuario=request.user,
+            )
+            RespuestaCargada.objects.bulk_create(respuestas)
+    except IntegrityError:
+        return error("Esta persona ya respondió este cuestionario.", 409)
+    registrar(
+        request, encuesta, "crear",
+        detalle=f"Cargó una encuesta de {cuestionario.titulo} (documento {encuestado.documento})",
+    )
+    return JsonResponse({"ok": True, "encuesta": encuesta.pk}, status=201)
+
+
+# ---------------------------------------------------------------------------
+# Estadísticas
+# ---------------------------------------------------------------------------
+
+
+@require_http_methods(["GET"])
+@requiere_permiso("core.view_cuestionario", "core.view_encuesta")
+def estadisticas(request, pk):
+    cuestionario = get_object_or_404(cuestionarios_de_campana(request.campana).select_related("categoria"), pk=pk)
+    total = cuestionario.encuestas.count()
+    ultima = cuestionario.encuestas.order_by("-realizada_en").values_list("realizada_en", flat=True).first()
+    # Todas las respuestas en un DataFrame de pandas; de ahí salen las frecuencias
+    respuestas = graficos.respuestas_de(cuestionario)
+
+    preguntas = []
+    for p in cuestionario.preguntas.prefetch_related("opciones"):
+        tabla, variable, respondidas = graficos.tabla_de(p, respuestas)
+        tabla["porcentaje"] = (100 * tabla["cantidad"] / respondidas).round(1) if respondidas else 0
+        dato = {
+            "id": p.pk,
+            "enunciado": p.enunciado,
+            "tipo": p.tipo,
+            "variable": variable,
+            "obligatoria": p.obligatoria,
+            "respondidas": respondidas,
+            "sin_responder": total - respondidas,
+            "elecciones": int(tabla["cantidad"].sum()),
+            "opciones": tabla.to_dict("records"),
+        }
+        if variable == Pregunta.Variable.CUANTITATIVA:
+            dato["medidas"] = graficos.medidas(tabla)
+        preguntas.append(dato)
+
+    return JsonResponse({
+        "cuestionario": {
+            "id": cuestionario.pk,
+            "titulo": cuestionario.titulo,
+            "categoria": cuestionario.categoria.nombre,
+            "descripcion": cuestionario.descripcion or "",
+            "activo": cuestionario.activo,
+            "creado_en": cuestionario.creado_en.isoformat() if cuestionario.creado_en else None,
+        },
+        # Datos para el encabezado del informe PDF
+        "campana": request.campana.nombre if request.campana else "",
+        "generado_por": request.user.get_full_name().strip() or request.user.email,
+        "total_encuestas": total,
+        "ultima_encuesta": ultima.isoformat() if ultima else None,
+        "militantes": cuestionario.encuestas.exclude(usuario=None).values("usuario").distinct().count(),
+        "preguntas": preguntas,
+    })
+
+
+@require_http_methods(["GET"])
+@requiere_permiso("core.view_cuestionario", "core.view_encuesta")
+def grafico(request, pk, pregunta, clave):
+    """Imagen PNG de un gráfico de una pregunta, hecha con pandas y matplotlib."""
+    if clave not in graficos.GRAFICOS:
+        return error("El gráfico no existe.", 404)
+    cuestionario = get_object_or_404(cuestionarios_de_campana(request.campana), pk=pk)
+    p = get_object_or_404(cuestionario.preguntas.prefetch_related("opciones"), pk=pregunta)
+    tabla, _, respondidas = graficos.tabla_de(p, graficos.respuestas_de(cuestionario))
+    respuesta = HttpResponse(graficos.grafico_png(clave, tabla, respondidas), content_type="image/png")
+    respuesta["Cache-Control"] = "private, no-cache"
+    return respuesta
+
+
+@require_http_methods(["GET"])
+@requiere_permiso("core.view_encuesta")
+def mapa_encuestas(request):
+    """Puntos del mapa: dónde se hizo cada encuesta de la campaña (latitud y
+    longitud que dio el celular). Las encuestas sin ubicación no aparecen."""
+    encuestas = (
+        Encuesta.objects.filter(cuestionario__in=cuestionarios_de_campana(request.campana))
+        .exclude(latitud=None)
+        .exclude(longitud=None)
+        .select_related("cuestionario", "usuario")
+        .order_by("-realizada_en")
+    )
+    return JsonResponse({
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [float(e.longitud), float(e.latitud)]},
+                "properties": {
+                    "id": e.pk,
+                    "cuestionario": e.cuestionario.titulo,
+                    "militante": (e.usuario.get_full_name().strip() or e.usuario.email) if e.usuario else "",
+                    "fecha": e.realizada_en.isoformat(),
+                },
+            }
+            for e in encuestas
+        ],
+    })
+
+
+@require_http_methods(["GET"])
+@requiere_permiso("core.view_encuesta")
+def por_dia(request):
+    """Encuestas de la campaña cargadas cada día entre ?desde= y ?hasta=
+    (AAAA-MM-DD, hasta 62 días). Los días sin encuestas vienen en 0.
+    Lo usa el gráfico de la semana en la pantalla de Inicio."""
+    try:
+        desde = date.fromisoformat(request.GET["desde"])
+        hasta = date.fromisoformat(request.GET["hasta"])
+    except (KeyError, ValueError):
+        return error("Indique las fechas desde y hasta con el formato AAAA-MM-DD.")
+    if desde > hasta or (hasta - desde).days > 61:
+        return error("El rango debe ser de 1 a 62 días.")
+    conteo = dict(
+        Encuesta.objects.filter(
+            cuestionario__in=cuestionarios_de_campana(request.campana),
+            realizada_en__date__range=(desde, hasta),
+        )
+        .annotate(dia=TruncDate("realizada_en"))  # día en la hora local (TIME_ZONE)
+        .values("dia")
+        .annotate(cantidad=Count("pk"))
+        .values_list("dia", "cantidad")
+    )
+    dias = [desde + timedelta(days=i) for i in range((hasta - desde).days + 1)]
+    return JsonResponse({"dias": [{"fecha": d.isoformat(), "encuestas": conteo.get(d, 0)} for d in dias]})
