@@ -38,7 +38,7 @@ function FormularioEquipo({ equipo, rutas, disponibles, onGuardado, onCerrar }) 
   const [elegidos, setElegidos] = useState(() => (equipo?.usuarios ?? []).map((u) => u.id))
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
-  const conCambios = useConCambios({ nombre, ruta, elegidos: [...elegidos].sort((a, b) => a - b) })
+  const conCambios = useConCambios({ nombre, ruta, elegidos: [...elegidos].sort() })
 
   // Los que ya están en este equipo más los que no tienen equipo
   const opciones = [...(equipo?.usuarios ?? []), ...disponibles]

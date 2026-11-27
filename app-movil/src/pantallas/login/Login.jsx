@@ -6,7 +6,7 @@ import { iniciarSesion, ultimoUsuario } from '../../api/auth'
 import { ProveedorTemaClaro } from '../../tema/claro'
 import { MARCA } from '../../tema/tema'
 import { Boton, Casilla, Entrada, Text } from '../../ui'
-import { errorContrasena, errorUsuario } from '../../util/validaciones'
+import { errorUsuario } from '../../util/validaciones'
 import FondoLogin, { AvisoAcceso } from './FondoLogin'
 
 // Login: nombre de usuario (apellido + inicial del nombre) y contraseña.
@@ -20,7 +20,10 @@ export default function Login({ onIngreso }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const errores = { nombre: errorUsuario(nombre), password: errorContrasena(password) }
+  // En el login solo se pide que la contraseña esté escrita: la regla (8 caracteres,
+  // mayúscula, etc.) se exige al crearla. Si falla, el servidor da siempre el mismo mensaje.
+  const errores = { nombre: errorUsuario(nombre), password: password ? '' : 'Ingrese su contraseña.' }
+  const completo = Boolean(nombre.trim() && password)
   const valores = { nombre, password }
   const tocar = (campo) => () => setTocados((t) => ({ ...t, [campo]: true }))
   const verError = (campo) => (tocados[campo] || valores[campo] !== '' ? errores[campo] : '')
@@ -35,7 +38,7 @@ export default function Login({ onIngreso }) {
       const usuario = await iniciarSesion(nombre.trim(), password, remember)
       onIngreso?.(usuario)
     } catch (err) {
-      setError(err.message || 'El nombre de usuario o la contraseña son incorrectos.')
+      setError(err.message || 'Credenciales inválidas. Por favor, verifique su usuario y contraseña.')
       setLoading(false)
     }
   }
@@ -88,7 +91,7 @@ export default function Login({ onIngreso }) {
           </Casilla>
           <Link href={{ pathname: '/olvide', params: { usuario: nombre.trim() } }} asChild>
             <Pressable hitSlop={8} accessibilityRole="link">
-              <Text style={{ color: MARCA.violeta, fontSize: 14, fontWeight: '700' }}>¿Olvidó su contraseña?</Text>
+              <Text style={{ color: MARCA.violeta, fontSize: 14, fontWeight: '700' }}>¿Olvidó su usuario o contraseña?</Text>
             </Pressable>
           </Link>
         </View>
@@ -97,6 +100,7 @@ export default function Login({ onIngreso }) {
           titulo={loading ? 'Ingresando…' : 'Iniciar sesión'}
           onPress={enviar}
           cargando={loading}
+          disabled={!completo}
           grande
           style={{ alignSelf: 'center', width: '80%', minWidth: 220 }}
         />

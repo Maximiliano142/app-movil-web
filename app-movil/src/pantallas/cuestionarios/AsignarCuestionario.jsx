@@ -78,7 +78,7 @@ export default function AsignarCuestionario({ cuestionario, onCerrar, onGuardado
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [iniciales, setIniciales] = useState('')
-  const conCambios = datos !== null && [...elegidos].sort((a, b) => a - b).join(',') !== iniciales
+  const conCambios = datos !== null && [...elegidos].sort().join(',') !== iniciales
 
   useEffect(() => {
     api
@@ -88,7 +88,7 @@ export default function AsignarCuestionario({ cuestionario, onCerrar, onGuardado
         const todos = [...d.equipos.flatMap((e) => e.usuarios), ...d.sin_equipo]
         const asignados = todos.filter((u) => u.asignado).map((u) => u.id)
         setElegidos(new Set(asignados))
-        setIniciales([...new Set(asignados)].sort((a, b) => a - b).join(','))
+        setIniciales([...new Set(asignados)].sort().join(','))
       })
       .catch((e) => setError(e.message))
   }, [cuestionario.id])

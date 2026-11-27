@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ProveedorSesion, useSesion } from '../src/sesion/Sesion'
-import { FUENTES } from '../src/tema/fuentes'
+import { ARCHIVOS_FUENTES } from '../src/tema/fuentes'
 import { MARCA, ProveedorTema, useTema } from '../src/tema/tema'
 import { cargarAlmacen } from '../src/util/almacen'
 import { Text } from '../src/ui'
@@ -62,7 +62,7 @@ export default function Raiz() {
   // Lo guardado en el celular (tema, último usuario…) se lee antes de dibujar
   // y las tipografías de la marca. Si las fuentes fallan, la app sigue con las del sistema.
   const [almacenListo, setAlmacenListo] = useState(false)
-  const [fuentesCargadas, errorFuentes] = useFonts(FUENTES)
+  const [fuentesCargadas, errorFuentes] = useFonts(ARCHIVOS_FUENTES)
   useEffect(() => {
     cargarAlmacen().finally(() => setAlmacenListo(true))
   }, [])

@@ -41,7 +41,8 @@ const ULTIMO_USUARIO = 'ultimo-usuario'
 export const ultimoUsuario = () => leer(ULTIMO_USUARIO, '')
 
 // Configuración → Mi perfil. Las tres devuelven el usuario actualizado.
-export const guardarPerfil = (datos) => pedir('/api/auth/perfil/', { method: 'PATCH', datos }).then((r) => r.usuario)
+// { usuario, correo_pendiente }: si se cambió el correo, queda pendiente hasta confirmarlo
+export const guardarPerfil = (datos) => pedir('/api/auth/perfil/', { method: 'PATCH', datos })
 export const guardarFoto = (foto) => pedir('/api/auth/foto/', { method: 'PUT', datos: { foto } }).then((r) => r.usuario)
 export const quitarFoto = () => pedir('/api/auth/foto/', { method: 'DELETE' }).then((r) => r.usuario)
 
@@ -50,6 +51,9 @@ export const pedirCambioDeContrasena = () => pedir('/api/auth/cambiar-contrasena
 
 // "¿Olvidó su contraseña?": con el nombre de usuario, el enlace llega al correo asociado
 export const pedirEnlace = (usuario) => pedir('/api/auth/olvide/', { method: 'POST', datos: { usuario } })
+
+// "¿Olvidó su usuario?": envía el nombre de usuario al correo indicado
+export const pedirUsuario = (email) => pedir('/api/auth/olvide-usuario/', { method: 'POST', datos: { email } })
 
 // Enlace del correo para elegir o restablecer la contraseña (/restablecer/:uid/:token)
 export const comprobarEnlace = (uid, token) => pedir(`/api/auth/restablecer/${uid}/${token}/`)

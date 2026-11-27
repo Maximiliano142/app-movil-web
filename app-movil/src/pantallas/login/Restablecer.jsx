@@ -124,7 +124,13 @@ export default function Restablecer({ uid, token }) {
         )}
         <AvisoAcceso>{error}</AvisoAcceso>
         {estado === 'formulario' && (
-          <Boton titulo={guardando ? 'Guardando…' : 'Guardar contraseña'} onPress={guardar} cargando={guardando} grande />
+          <Boton
+            titulo={guardando ? 'Guardando…' : 'Guardar contraseña'}
+            onPress={guardar}
+            cargando={guardando}
+            disabled={Boolean(errores.password || errores.repetida)}
+            grande
+          />
         )}
         {(estado === 'invalido' || estado === 'listo') && <Boton titulo="Ir a iniciar sesión" onPress={() => router.replace('/login')} grande />}
         {estado === 'invalido' && (
