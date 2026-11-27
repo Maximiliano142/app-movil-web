@@ -5,6 +5,7 @@ import * as Sharing from 'expo-sharing'
 import { Download, FileDown } from 'lucide-react-native'
 import { obtenerResumenAnalitica, urlGraficoAnalitica } from '../../api/analitica'
 import { MARCA, useTema } from '../../tema/tema'
+import RespuestasPorZona from './RespuestasPorZona'
 import { Acciones, Boton, Casilla, Encabezado, Fila, Modal, Pagina, SelectorFecha, Tarjeta, Texto, TextoError, VacioTarjeta } from '../../ui'
 import ImagenApi from '../../ui/ImagenApi'
 
@@ -232,6 +233,7 @@ export default function Analitica({ usuario }) {
           ))}
         </>
       )}
+      {resumen ? <RespuestasPorZona zonas={resumen.zonas ?? []} cuestionarios={resumen.cuestionarios ?? []} /> : null}
 
       {eligiendoPdf && <ElegirGraficosPdf graficos={paraPdf} onDescargar={descargarElegidos} onCerrar={() => setEligiendoPdf(false)} />}
     </Pagina>

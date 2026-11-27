@@ -4,18 +4,20 @@ import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, Vi
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
 import { Franja } from '../../ui'
+import { FUENTES } from '../../tema/fuentes'
 
 export default function FondoLogin({ titulo, subtitulo, children }) {
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <Image source={require('../../../assets/img/fondo.png')} style={[StyleSheet.absoluteFill, { opacity: 0.07 }]} resizeMode="cover" blurRadius={6} />
-      <Svg style={{ position: 'absolute', top: 0, left: 0, right: 0 }} height={110} width="100%" viewBox="0 0 1440 160" preserveAspectRatio="none">
-        <Path d="M0 0 H1440 V70 C1180 150 900 20 620 80 C380 130 180 110 0 60 Z" fill="#533693" />
+      {/* Ondas de Consultora-Grupo7: violeta arriba; violeta, magenta y naranja abajo */}
+      <Svg style={{ position: 'absolute', top: 0, left: 0, right: 0 }} height={120} width="100%" viewBox="0 0 400 120" preserveAspectRatio="none">
+        <Path d="M0 0 H400 V50 C340 105 260 98 200 72 C140 46 60 30 0 64 Z" fill="#53368F" />
       </Svg>
-      <Svg style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }} height={130} width="100%" viewBox="0 0 1440 260" preserveAspectRatio="none">
-        <Path d="M0 120 C300 40 700 220 1000 120 C1200 55 1340 70 1440 30 V260 H0 Z" fill="#fdb03e" />
-        <Path d="M0 170 C260 110 620 250 960 175 C1190 125 1330 150 1440 110 V260 H0 Z" fill="#d8267e" />
-        <Path d="M0 215 C300 170 640 270 980 220 C1200 190 1340 205 1440 180 V260 H0 Z" fill="#533693" />
+      <Svg style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }} height={90} width="100%" viewBox="0 0 400 80" preserveAspectRatio="none">
+        <Path d="M0 25 C90 0 170 40 250 40 C320 40 360 10 400 20 V80 H0 Z" fill="#53368F" />
+        <Path d="M150 80 C220 50 300 35 400 40 V80 Z" fill="#D6247F" opacity={0.9} />
+        <Path d="M290 80 C330 55 365 35 400 22 V80 Z" fill="#FDB03F" />
       </Svg>
       <SafeAreaView style={{ flex: 1 }}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -40,8 +42,8 @@ export default function FondoLogin({ titulo, subtitulo, children }) {
 }
 
 export const estilos = StyleSheet.create({
-  titulo: { fontSize: 28, fontWeight: '800', color: '#15121c', textAlign: 'center' },
-  subtitulo: { fontSize: 15, color: '#5d5a66', textAlign: 'center', marginTop: 6 },
+  titulo: { fontSize: 28, fontWeight: '800', color: '#111111', textAlign: 'center', fontFamily: FUENTES.titulo },
+  subtitulo: { fontSize: 15, color: '#6B7280', textAlign: 'center', marginTop: 6, fontFamily: FUENTES.texto },
   error: {
     color: '#c0182f',
     backgroundColor: '#fdf1f2',

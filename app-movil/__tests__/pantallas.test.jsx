@@ -28,6 +28,18 @@ jest.mock('lucide-react-native', () => {
 })
 jest.mock('expo', () => ({ useEvent: (_p, _e, inicial) => inicial }))
 jest.mock('expo-print', () => ({}))
+// GPS simulado: cada prueba elige qué devuelve (permiso, GPS prendido, posición)
+global.__gps = { permiso: 'granted', puedePreguntar: true, prendido: true, coords: { latitude: -24.785, longitude: -65.415, accuracy: 8 } }
+jest.mock('expo-location', () => ({
+  Accuracy: { High: 4 },
+  requestForegroundPermissionsAsync: async () => ({ status: global.__gps.permiso, canAskAgain: global.__gps.puedePreguntar }),
+  hasServicesEnabledAsync: async () => global.__gps.prendido,
+  getCurrentPositionAsync: async () => {
+    global.__gps.lecturas = (global.__gps.lecturas ?? 0) + 1
+    if (global.__gps.falla === true || global.__gps.lecturas <= (global.__gps.falla ?? 0)) throw new Error('Location request failed')
+    return { coords: global.__gps.coords }
+  },
+}))
 jest.mock('expo-sharing', () => ({}))
 jest.mock('expo-file-system/legacy', () => ({}))
 jest.mock('expo-asset', () => ({ Asset: {} }))
@@ -82,7 +94,9 @@ const mockDATOS = [
   [/^\/api\/permisos\//, { grupos: [{ id: 1, nombre: 'Admin', usuarios: 1, permisos: [{ seccion: 'Mapa', acciones: ['Ver', 'Crear'] }] }], usuarios: [{ id: 1, nombre: 'Juan', email: 'a', superusuario: true, grupos: ['Admin'] }] }],
   [/^\/api\/grupos\/$/, { grupos: [{ id: 1, nombre: 'Admin', permisos: [1, 2], usuarios: [{ id: 1, nombre: 'Juan', email: 'a', activo: true }, { id: 2, nombre: 'Ana', email: 'n', activo: false }], total_usuarios: 2 }] }],
   [/^\/api\/historial\//, { total: 2, pagina: 1, paginas: 1, filtros: { usuarios: [{ id: 1, nombre: 'Juan' }], secciones: [{ id: 'mapa', nombre: 'Mapa' }] }, movimientos: [{ id: 1, fecha: '2026-11-20T10:00:00Z', accion: 'editar', usuario: { nombre: 'Juan' }, seccion: 'Zona', objeto: 'Norte', detalle: '', cambios: [{ campo: 'Color', antes: '#000', despues: '' }] }, { id: 2, fecha: '2026-11-19T10:00:00Z', accion: 'sesion', usuario: { nombre: 'Ana' }, detalle: 'Inició sesión', cambios: [] }] }],
-  [/^\/api\/analitica\//, { encuestas: 5, desde: '2026-11-01', hasta: '2026-11-24', explicaciones: {} }],
+  // Respuestas por zona: la respuesta la elige cada prueba (global.__zona)
+  [/^\/api\/analitica\/respuestas-por-zona\//, { porPrueba: 'zona' }],
+  [/^\/api\/analitica\//, { encuestas: 5, desde: '2026-11-01', hasta: '2026-11-24', explicaciones: {}, zonas: [{ id: 1, nombre: 'Oeste' }, { id: 2, nombre: 'Sur' }], cuestionarios: [{ id: 7, titulo: 'Seguridad barrial' }] }],
   [/^\/api\/avisos\//, { avisos: [] }],
   [/^\/api\/backup\//, { configurado: true, faltan: [], maximo: 1, backups: [{ id: 'b1', nombre: 'snap', creado: '2026-11-01T00:00:00Z', automatico: true }], error_neon: '', aviso: '', programacion: { activo: true, frecuencia: 'semanal', dia_semana: 2, hora: '03:00', proximo: '2026-11-26T03:00:00Z', ultimo_automatico: null, ultimo_error: '' } }],
 ]
@@ -93,13 +107,16 @@ jest.mock('../src/api/cliente', () => ({
   alSinCampana: () => () => {},
   urlCompleta: (u) => u,
   pedirImagen: async () => 'data:image/png;base64,AAAA',
-  pedir: async (url) => {
+  pedir: async (url, opciones = {}) => {
+    global.__pedidos.push({ url, ...opciones })
     const fila = mockDATOS.find(([r]) => r.test(url))
     if (!fila) throw new Error('Sin datos de prueba para ' + url)
+    if (fila[1].porPrueba) return JSON.parse(JSON.stringify(global['__' + fila[1].porPrueba]))
     return JSON.parse(JSON.stringify(fila[1]))
   },
 }))
 
+global.__pedidos = []
 jest.mock('../src/sesion/Sesion', () => ({ useSesion: () => ({ usuario: global.__usuario, setUsuario: () => {}, salir: () => {} }) }))
 
 const pantallas = {
@@ -222,4 +239,138 @@ test('estadísticas: cambia de gráfico y abre el PDF', async () => {
   await fireEvent.press(screen.getByText('PDF'))
   await esperar()
   expect(screen.getByText('Descargar PDF')).toBeTruthy()
+})
+
+
+// --- GPS al enviar la encuesta ---
+const GPS_BIEN = { permiso: 'granted', puedePreguntar: true, prendido: true, coords: { latitude: -24.785, longitude: -65.415, accuracy: 8 } }
+
+async function enviarEncuestaCompleta() {
+  const R = require('../src/pantallas/responder/ResponderCuestionario').default
+  await render(envolver(<R id="7" />))
+  await esperar()
+  await fireEvent.changeText(screen.getByPlaceholderText('Sin puntos, 7 u 8 números'), '30111222')
+  await fireEvent.press(screen.getByText('Sí'))
+  global.__pedidos = []
+  await fireEvent.press(screen.getByText('Enviar encuesta'))
+  await esperar()
+  return global.__pedidos.filter((p) => p.method === 'POST')
+}
+
+test('gps: envía latitud y longitud con las respuestas', async () => {
+  global.__gps = { ...GPS_BIEN }
+  const posts = await enviarEncuestaCompleta()
+  expect(posts).toHaveLength(1)
+  expect(posts[0].datos.latitud).toBe(-24.785)
+  expect(posts[0].datos.longitud).toBe(-65.415)
+  expect(screen.getByText('¡Encuesta guardada!')).toBeTruthy()
+})
+
+test('gps: sin permiso no envía y lo explica', async () => {
+  global.__gps = { ...GPS_BIEN, permiso: 'denied' }
+  const posts = await enviarEncuestaCompleta()
+  expect(posts).toHaveLength(0)
+  expect(screen.getByText(/hace falta permitir el acceso a la ubicación/)).toBeTruthy()
+  expect(screen.getByText('Reintentar')).toBeTruthy()
+})
+
+test('gps: permiso bloqueado ofrece abrir la configuración', async () => {
+  global.__gps = { ...GPS_BIEN, permiso: 'denied', puedePreguntar: false }
+  const posts = await enviarEncuestaCompleta()
+  expect(posts).toHaveLength(0)
+  expect(screen.getByText('Abrir configuración')).toBeTruthy()
+})
+
+test('gps: con el GPS apagado no envía', async () => {
+  global.__gps = { ...GPS_BIEN, prendido: false }
+  const posts = await enviarEncuestaCompleta()
+  expect(posts).toHaveLength(0)
+  expect(screen.getByText(/ubicación \(GPS\) del celular está desactivada/)).toBeTruthy()
+})
+
+test('gps: sin señal no envía', async () => {
+  global.__gps = { ...GPS_BIEN, falla: true }
+  const posts = await enviarEncuestaCompleta()
+  expect(posts).toHaveLength(0)
+  expect(screen.getByText(/sin señal de GPS/)).toBeTruthy()
+})
+
+test('gps: si el GPS no responde usa la ubicación por Wi-Fi o red', async () => {
+  global.__gps = { ...GPS_BIEN, falla: 1 }
+  const posts = await enviarEncuestaCompleta()
+  expect(global.__gps.lecturas).toBe(2)
+  expect(posts).toHaveLength(1)
+  expect(posts[0].datos.latitud).toBe(-24.785)
+})
+
+test('gps: una posición (0, 0) no se acepta', async () => {
+  global.__gps = { ...GPS_BIEN, coords: { latitude: 0, longitude: 0 } }
+  const posts = await enviarEncuestaCompleta()
+  expect(posts).toHaveLength(0)
+  expect(screen.getByText(/La ubicación obtenida no es válida/)).toBeTruthy()
+})
+
+test('gps: validación de coordenadas', () => {
+  const { coordenadasValidas } = require('../src/util/ubicacion')
+  expect(coordenadasValidas(-24.78, -65.41)).toBe(true)
+  expect(coordenadasValidas(0, 0)).toBe(false)
+  expect(coordenadasValidas(91, 10)).toBe(false)
+  expect(coordenadasValidas(10, -181)).toBe(false)
+  expect(coordenadasValidas(NaN, 10)).toBe(false)
+  expect(coordenadasValidas('10', 10)).toBe(false)
+})
+
+test('validaciones: reglas actuales de correo y contraseña', () => {
+  const v = require('../src/util/validaciones')
+  expect(v.emailValido('usuario@dominio.com')).toBe(true)
+  expect(v.emailValido('usuario@dominio.c')).toBe(false)
+  expect(v.emailValido('peña@dominio.com')).toBe(false)
+  expect(v.emailValido('usuario@dominio..com')).toBe(false)
+  expect(v.contrasenaValida('Abc12345')).toBe(true)
+  expect(v.contrasenaValida('Abc123')).toBe(false)
+  expect(v.errorDocumento('123456')).toBeTruthy()
+  expect(v.errorDocumento('30111222')).toBe('')
+})
+
+
+// --- Dashboard: respuestas por zona y cuestionario ---
+const ZONA_BASE = { zona: { id: 1, nombre: 'Oeste' }, cuestionario: { id: 7, titulo: 'Seguridad barrial' }, encuestas_cuestionario: 3, reparto: [] }
+
+async function elegirZonaYCuestionario() {
+  const A = require('../src/pantallas/analitica/Analitica').default
+  await render(envolver(<A usuario={{ campana: { nombre: 'Campaña' } }} />))
+  await esperar()
+  expect(screen.getByText('Elija una zona y un cuestionario para ver sus preguntas y respuestas.')).toBeTruthy()
+  await fireEvent.press(screen.getByText('Elegir zona…'))
+  await fireEvent.press(screen.getByText('Oeste'))
+  await fireEvent.press(screen.getByText('Elegir cuestionario…'))
+  await fireEvent.press(screen.getAllByText('Seguridad barrial').pop())
+  await esperar()
+}
+
+test('dashboard zona: muestra preguntas y respuestas de la zona', async () => {
+  global.__zona = { ...ZONA_BASE, encuestas: 3, separable: true, preguntas: [
+    { id: 1, orden: 1, enunciado: '¿Vota?', multiple: false, opciones: [{ id: 1, texto: 'Sí', cantidad: 2, porcentaje: 66.7 }, { id: 2, texto: 'No', cantidad: 1, porcentaje: 33.3 }] },
+  ] }
+  await elegirZonaYCuestionario()
+  const pedido = global.__pedidos.map((p) => p.url).find((u) => u.includes('respuestas-por-zona'))
+  expect(pedido).toContain('zona=1')
+  expect(pedido).toContain('cuestionario=7')
+  expect(screen.getByText('3 encuestas de «Seguridad barrial» en Oeste')).toBeTruthy()
+  expect(screen.getByText('1. ¿Vota?')).toBeTruthy()
+  expect(screen.getByText('2 · 66,7 %')).toBeTruthy()
+})
+
+test('dashboard zona: sin encuestas avisa que no hay resultados', async () => {
+  global.__zona = { ...ZONA_BASE, encuestas: 0, separable: false, preguntas: [] }
+  await elegirZonaYCuestionario()
+  expect(screen.getByText(/No hay resultados/)).toBeTruthy()
+})
+
+test('dashboard zona: si el cuestionario se cargó en varias zonas no mezcla respuestas', async () => {
+  global.__zona = { ...ZONA_BASE, encuestas: 2, separable: false, preguntas: [], reparto: [{ zona: 'Oeste', encuestas: 2 }, { zona: 'Sur', encuestas: 1 }] }
+  await elegirZonaYCuestionario()
+  expect(screen.getByText(/no se pueden mostrar solo las de esta zona/)).toBeTruthy()
+  expect(screen.getByText('• Sur: 1 encuesta')).toBeTruthy()
+  expect(screen.queryByText('1. ¿Vota?')).toBeNull()
 })

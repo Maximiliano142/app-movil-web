@@ -4,20 +4,21 @@ import { useState } from 'react'
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Check, Eye, EyeOff } from 'lucide-react-native'
 import { MARCA, useTema } from '../tema/tema'
+import { FUENTES } from '../tema/fuentes'
 import { inicialDe } from '../util/usuario'
 
 export function Texto({ estilo = 'normal', style, children, ...resto }) {
   const { c } = useTema()
   const base = {
-    normal: { color: c.texto, fontSize: 15 },
-    titulo: { color: c.texto, fontSize: 26, fontWeight: '800' },
-    subtitulo: { color: c.texto, fontSize: 18, fontWeight: '700' },
-    negrita: { color: c.texto, fontSize: 15, fontWeight: '700' },
-    suave: { color: c.gris, fontSize: 14 },
-    chico: { color: c.gris, fontSize: 12.5 },
-    error: { color: c.rojoTexto, fontSize: 14, fontWeight: '500' },
-    ok: { color: c.verdeTexto, fontSize: 14, fontWeight: '600' },
-    etiqueta: { color: c.gris, fontSize: 13.5, fontWeight: '600', marginBottom: 6 },
+    normal: { color: c.texto, fontSize: 15, fontFamily: FUENTES.texto },
+    titulo: { color: c.texto, fontSize: 26, fontWeight: '800', fontFamily: FUENTES.titulo },
+    subtitulo: { color: c.texto, fontSize: 18, fontWeight: '700', fontFamily: FUENTES.subtitulo },
+    negrita: { color: c.texto, fontSize: 15, fontWeight: '700', fontFamily: FUENTES.negrita },
+    suave: { color: c.gris, fontSize: 14, fontFamily: FUENTES.texto },
+    chico: { color: c.gris, fontSize: 12.5, fontFamily: FUENTES.texto },
+    error: { color: c.rojoTexto, fontSize: 14, fontWeight: '500', fontFamily: FUENTES.texto },
+    ok: { color: c.verdeTexto, fontSize: 14, fontWeight: '600', fontFamily: FUENTES.negrita },
+    etiqueta: { color: c.gris, fontSize: 13.5, fontWeight: '600', marginBottom: 6, fontFamily: FUENTES.semi },
   }[estilo]
   return (
     <Text style={[base, style]} {...resto}>
@@ -62,7 +63,7 @@ export function Boton({ titulo, onPress, variante = 'lleno', chico, grande, disa
       ]}
     >
       {cargando ? <ActivityIndicator size="small" color={colores.texto} /> : Icono && <Icono size={17} color={colores.texto} />}
-      <Text style={{ color: colores.texto, fontWeight: '700', fontSize: chico ? 13.5 : 15 }} numberOfLines={1}>
+      <Text style={{ color: colores.texto, fontWeight: '700', fontSize: chico ? 13.5 : 15, fontFamily: FUENTES.boton }} numberOfLines={1}>
         {titulo}
       </Text>
     </Pressable>
@@ -158,6 +159,7 @@ export function Entrada({ etiqueta, error, ayuda, style, multiline, contrasena, 
             flex: 1,
             color: c.texto,
             fontSize: 15.5,
+            fontFamily: FUENTES.texto,
             paddingVertical: multiline ? 10 : 8,
             textAlignVertical: multiline ? 'top' : 'center',
           }}

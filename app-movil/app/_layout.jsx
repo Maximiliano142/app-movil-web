@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { Animated, Image, StyleSheet, Text, View } from 'react-native'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import { useFonts } from 'expo-font'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ProveedorSesion, useSesion } from '../src/sesion/Sesion'
 import { MARCA, ProveedorTema, useTema } from '../src/tema/tema'
 import { cargarAlmacen } from '../src/util/almacen'
+import { ARCHIVOS_FUENTES } from '../src/tema/fuentes'
 
 // Pantalla de arranque: logo y tres puntos mientras se consulta la sesión
 function Arranque() {
@@ -58,13 +60,15 @@ function Navegacion() {
 export default function Raiz() {
   // Lo guardado en el celular (tema, último usuario…) se lee antes de dibujar
   const [listo, setListo] = useState(false)
+  // Montserrat y Arimo (Manual de Identidad). Si no cargan, sigue con la del sistema.
+  const [fuentes, errorFuentes] = useFonts(ARCHIVOS_FUENTES)
   useEffect(() => {
     cargarAlmacen().finally(() => setListo(true))
   }, [])
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        {!listo ? (
+        {!listo || (!fuentes && !errorFuentes) ? (
           <Arranque />
         ) : (
           <ProveedorTema>

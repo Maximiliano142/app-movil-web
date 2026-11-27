@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native'
+import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import { router } from 'expo-router'
-import { ArrowLeft, Check } from 'lucide-react-native'
+import { ArrowLeft, Check, MapPin } from 'lucide-react-native'
 import * as api from '../../api/encuestas'
 import { MARCA, useTema } from '../../tema/tema'
 import { Boton, Entrada, Fila, Texto, VacioTarjeta } from '../../ui'
 import { errorDocumento, errorPersona } from '../../util/validaciones'
+import { ErrorUbicacion, obtenerUbicacion } from '../../util/ubicacion'
 
 // Carga de una encuesta (datos de la persona + respuestas). Los errores se
 // marcan en el momento: el documento y los nombres al salir del campo, y una
 // pregunta obligatoria sin responder apenas se responde una posterior.
+// Al enviar se toma la ubicación GPS del celular (util/ubicacion.js) y va junto
+// con las respuestas: sin una ubicación válida la encuesta no se envía.
 const ENCUESTADO_VACIO = { documento: '', nombre: '', apellido: '' }
 
 function Pregunta({ pregunta, numero, elegidas, error, onCambio }) {
@@ -105,6 +108,9 @@ export default function ResponderCuestionario({ id }) {
   const [enviando, setEnviando] = useState(false)
   const [enviado, setEnviado] = useState(false)
   const [tocados, setTocados] = useState({})
+  // Ubicación GPS: 'obteniendo' mientras se lee; el error explica qué falta
+  const [ubicando, setUbicando] = useState(false)
+  const [errorGps, setErrorGps] = useState(null)
 
   const erroresPersona = {
     documento: errorDocumento(encuestado.documento),
@@ -159,11 +165,26 @@ export default function ResponderCuestionario({ id }) {
       scroll.current?.scrollTo({ y: 0, animated: true })
       return
     }
+    // Ubicación real del lugar donde se cargó: sin ella no se envía
+    setErrorGps(null)
+    setUbicando(true)
+    let ubicacion
+    try {
+      ubicacion = await obtenerUbicacion()
+    } catch (e) {
+      setErrorGps(e instanceof ErrorUbicacion ? e : new ErrorUbicacion('sin_senal', e.message))
+      scroll.current?.scrollToEnd({ animated: true })
+      return
+    } finally {
+      setUbicando(false)
+    }
     setEnviando(true)
     try {
       await api.enviarRespuestas(id, {
         encuestado,
         respuestas: cuestionario.preguntas.filter((p) => respuestas[p.id]?.length > 0).map((p) => ({ pregunta: p.id, opciones: respuestas[p.id] })),
+        latitud: ubicacion.latitud,
+        longitud: ubicacion.longitud,
       })
       setEnviado(true)
     } catch (e) {
@@ -180,6 +201,7 @@ export default function ResponderCuestionario({ id }) {
     setRespuestas({})
     setErrores({})
     setError('')
+    setErrorGps(null)
     setEnviado(false)
   }
 
@@ -283,7 +305,30 @@ export default function ResponderCuestionario({ id }) {
           <Pregunta key={p.id} pregunta={p} numero={i + 1} elegidas={respuestas[p.id] ?? []} error={errores[p.id]} onCambio={(v) => responder(p.id, v)} />
         ))}
 
-        <Boton titulo={enviando ? 'Enviando…' : 'Enviar encuesta'} onPress={enviar} cargando={enviando} grande />
+        {errorGps ? (
+          <View
+            style={{ backgroundColor: c.fondoError, borderColor: c.bordeError, borderWidth: 1, padding: 12, borderRadius: 10, gap: 8 }}
+            accessibilityRole="alert"
+          >
+            <Fila gap={8} style={{ alignItems: 'flex-start' }}>
+              <MapPin size={18} color={c.rojoTexto} />
+              <Text style={{ color: c.rojoTexto, flex: 1 }}>{errorGps.message}</Text>
+            </Fila>
+            {errorGps.codigo === 'permiso_bloqueado' && (
+              <Boton titulo="Abrir configuración" variante="borde" chico onPress={() => Linking.openSettings()} />
+            )}
+          </View>
+        ) : null}
+
+        <Boton
+          titulo={ubicando ? 'Obteniendo ubicación…' : enviando ? 'Enviando…' : errorGps ? 'Reintentar' : 'Enviar encuesta'}
+          onPress={enviar}
+          cargando={ubicando || enviando}
+          grande
+        />
+        <Texto estilo="chico" style={{ textAlign: 'center' }}>
+          Al enviar se registra la ubicación del celular donde se realizó la encuesta.
+        </Texto>
       </ScrollView>
     </KeyboardAvoidingView>
   )

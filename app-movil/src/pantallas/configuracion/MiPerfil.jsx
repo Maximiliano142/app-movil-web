@@ -28,7 +28,10 @@ function EditarDatos({ usuario, onGuardado, onCerrar }) {
   })
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
+  // Para cambiar el correo se pide la contraseña de la cuenta (lo exige el backend)
+  const [password, setPassword] = useState('')
   const conCambios = useConCambios(form)
+  const cambiaCorreo = form.email.trim().toLowerCase() !== (usuario.email ?? '').toLowerCase()
   const cambiar = (campo) => (v) => setForm((f) => ({ ...f, [campo]: v }))
   const errores = {
     nombre: form.nombre.trim() ? errorPersona(form.nombre) : 'Ingrese el nombre.',
@@ -36,14 +39,15 @@ function EditarDatos({ usuario, onGuardado, onCerrar }) {
     email: errorEmail(form.email),
     telefono: errorTelefono(form.telefono),
   }
-  const valido = !Object.values(errores).some(Boolean)
+  const valido = !Object.values(errores).some(Boolean) && (!cambiaCorreo || Boolean(password))
 
   async function guardar() {
     if (!valido) return
     setError('')
     setGuardando(true)
     try {
-      onGuardado(await guardarPerfil(form))
+      const r = await guardarPerfil(cambiaCorreo ? { ...form, password } : form)
+      onGuardado(r.usuario, r.correo_pendiente)
     } catch (err) {
       setError(err.message)
       setGuardando(false)
@@ -57,6 +61,17 @@ function EditarDatos({ usuario, onGuardado, onCerrar }) {
         <Entrada style={{ flex: 1 }} etiqueta="Apellido (opcional)" value={form.apellido} onChangeText={cambiar('apellido')} maxLength={150} autoCapitalize="words" error={errores.apellido} />
       </Fila>
       <Entrada etiqueta="Correo electrónico" value={form.email} onChangeText={cambiar('email')} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} maxLength={254} error={errores.email} />
+      {cambiaCorreo && (
+        <Entrada
+          etiqueta="Contraseña actual *"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          ayuda="Para cambiar el correo confirme su contraseña. Le enviaremos un enlace al correo nuevo para verificarlo."
+        />
+      )}
       <Fila gap={10} style={{ alignItems: 'flex-start' }}>
         <Entrada style={{ flex: 1 }} etiqueta="Teléfono (opcional)" value={form.telefono} onChangeText={cambiar('telefono')} keyboardType="phone-pad" maxLength={20} error={errores.telefono} />
         <Entrada style={{ flex: 1 }} etiqueta="Documento" value={usuario.documento || 'Sin cargar'} editable={false} />
@@ -135,12 +150,14 @@ export default function MiPerfil({ usuario, onCambio }) {
     }
   }
 
-  function guardado(nuevo) {
+  function guardado(nuevo, correoPendiente) {
     const cambioUsuario = nuevo.username !== usuario.username
     onCambio(nuevo)
     setEditando(false)
     setAviso(
-      cambioUsuario ? `Sus datos se guardaron. Su nombre de usuario ahora es «${nuevo.username}»: úselo para ingresar.` : 'Sus datos se guardaron correctamente.',
+      correoPendiente
+        ? `Sus datos se guardaron. Para terminar de cambiar el correo, abra el enlace que le enviamos a ${correoPendiente}.`
+        : cambioUsuario ? `Sus datos se guardaron. Su nombre de usuario ahora es «${nuevo.username}»: úselo para ingresar.` : 'Sus datos se guardaron correctamente.',
     )
   }
 

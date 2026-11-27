@@ -5,7 +5,7 @@ import { Lock, User } from 'lucide-react-native'
 import { iniciarSesion, ultimoUsuario } from '../../api/auth'
 import { ProveedorTemaClaro } from '../../tema/claro'
 import { Boton, Casilla, Entrada } from '../../ui'
-import { errorContrasena, errorUsuario } from '../../util/validaciones'
+import { errorUsuario } from '../../util/validaciones'
 import FondoLogin, { estilos } from './FondoLogin'
 
 // Login: nombre de usuario (apellido + inicial del nombre) y contraseña.
@@ -19,7 +19,10 @@ export default function Login({ onIngreso }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const errores = { nombre: errorUsuario(nombre), password: errorContrasena(password) }
+  // En el login solo se pide que la contraseña esté escrita: la regla (8 caracteres,
+  // mayúscula, etc.) se exige al crearla. Si falla, el servidor da siempre el mismo mensaje.
+  const errores = { nombre: errorUsuario(nombre), password: password ? '' : 'Ingrese su contraseña.' }
+  const completo = Boolean(nombre.trim() && password)
   const valores = { nombre, password }
   const tocar = (campo) => () => setTocados((t) => ({ ...t, [campo]: true }))
   const verError = (campo) => (tocados[campo] || valores[campo] !== '' ? errores[campo] : '')
@@ -34,7 +37,7 @@ export default function Login({ onIngreso }) {
       const usuario = await iniciarSesion(nombre.trim(), password, remember)
       onIngreso?.(usuario)
     } catch (err) {
-      setError(err.message || 'El nombre de usuario o la contraseña son incorrectos.')
+      setError(err.message || 'Credenciales inválidas. Por favor, verifique su usuario y contraseña.')
       setLoading(false)
     }
   }
@@ -81,7 +84,7 @@ export default function Login({ onIngreso }) {
           </Casilla>
           <Link href={{ pathname: '/olvide', params: { usuario: nombre.trim() } }} asChild>
             <Pressable hitSlop={8}>
-              <Text style={{ color: '#51318f', fontWeight: '600' }}>¿Olvidó su contraseña?</Text>
+              <Text style={{ color: '#51318f', fontWeight: '600' }}>¿Olvidó su usuario o contraseña?</Text>
             </Pressable>
           </Link>
         </View>
@@ -90,7 +93,7 @@ export default function Login({ onIngreso }) {
             {error}
           </Text>
         ) : null}
-        <Boton titulo={loading ? 'Ingresando…' : 'Iniciar sesión'} onPress={enviar} cargando={loading} grande />
+        <Boton titulo={loading ? 'Ingresando…' : 'Iniciar sesión'} onPress={enviar} cargando={loading} disabled={!completo} grande />
       </FondoLogin>
     </ProveedorTemaClaro>
   )

@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
-import { User } from 'lucide-react-native'
-import { pedirEnlace, ultimoUsuario } from '../../api/auth'
+import { Mail, User } from 'lucide-react-native'
+import { pedirEnlace, pedirUsuario, ultimoUsuario } from '../../api/auth'
 import { ProveedorTemaClaro } from '../../tema/claro'
 import { Boton, Entrada } from '../../ui'
-import { errorUsuario } from '../../util/validaciones'
+import { errorEmail, errorUsuario } from '../../util/validaciones'
 import FondoLogin, { estilos } from './FondoLogin'
 
 // El correo trae un enlace .../restablecer/UID/TOKEN. Si se abre en el celular
@@ -35,19 +35,30 @@ function PegarEnlace() {
   )
 }
 
-// "¿Olvidó su contraseña?": la persona confirma su nombre de usuario y el
+// "¿Olvidó su usuario o contraseña?". Para la contraseña, la persona confirma su nombre de usuario y el
 // enlace para elegir una contraseña nueva se envía al correo asociado.
 // La respuesta es siempre la misma, exista o no.
 export default function Olvide() {
   const params = useLocalSearchParams()
+  // Qué se quiere recuperar: la contraseña (con el usuario) o el usuario (con el correo)
+  const [que, setQue] = useState(params.que === 'usuario' ? 'usuario' : 'contrasena')
   const [nombre, setNombre] = useState(() => params.usuario || ultimoUsuario())
+  const [email, setEmail] = useState('')
   const [tocado, setTocado] = useState(false)
   const [error, setError] = useState('')
   const [enviado, setEnviado] = useState('')
   const [enviando, setEnviando] = useState(false)
 
-  const errorCampo = errorUsuario(nombre)
-  const verError = (tocado || nombre !== '') && errorCampo
+  const porUsuario = que === 'contrasena'
+  const valor = porUsuario ? nombre : email
+  const errorCampo = porUsuario ? errorUsuario(nombre) : errorEmail(email)
+  const verError = (tocado || valor !== '') && errorCampo
+
+  function elegir(nueva) {
+    setQue(nueva)
+    setTocado(false)
+    setError('')
+  }
 
   async function enviar() {
     setError('')
@@ -55,7 +66,7 @@ export default function Olvide() {
     if (errorCampo) return
     setEnviando(true)
     try {
-      const r = await pedirEnlace(nombre.trim())
+      const r = porUsuario ? await pedirEnlace(nombre.trim()) : await pedirUsuario(email.trim().toLowerCase())
       setEnviado(r.mensaje)
     } catch (err) {
       setError(err.message)
@@ -67,11 +78,15 @@ export default function Olvide() {
   return (
     <ProveedorTemaClaro>
       <FondoLogin
-        titulo={enviado ? 'Revise su correo' : 'Recuperar contraseña'}
+        titulo={enviado ? 'Revise su correo' : porUsuario ? 'Recuperar contraseña' : 'Recuperar usuario'}
         subtitulo={
           enviado
-            ? 'El enlace vence en 24 horas y sirve una sola vez.'
-            : 'Enviaremos al correo asociado a su usuario un enlace para elegir una contraseña nueva.'
+            ? porUsuario
+              ? 'El enlace vence en 24 horas y sirve una sola vez.'
+              : 'Con ese nombre de usuario y su contraseña puede volver a ingresar.'
+            : porUsuario
+              ? 'Enviaremos al correo asociado a su usuario un enlace para elegir una contraseña nueva.'
+              : 'Escriba el correo de su cuenta y le enviaremos su nombre de usuario.'
         }
       >
         {enviado ? (
@@ -80,8 +95,26 @@ export default function Olvide() {
           </Text>
         ) : (
           <>
+            {/* ¿Qué olvidó? */}
+            <View style={propios.elegir} accessibilityRole="radiogroup">
+              {[
+                ['contrasena', 'Mi contraseña'],
+                ['usuario', 'Mi usuario'],
+              ].map(([clave, texto]) => (
+                <Pressable
+                  key={clave}
+                  onPress={() => elegir(clave)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: que === clave }}
+                  style={[propios.opcion, que === clave && propios.opcionActiva]}
+                >
+                  <Text style={[propios.opcionTexto, que === clave && propios.opcionTextoActiva]}>{texto}</Text>
+                </Pressable>
+              ))}
+            </View>
+            {porUsuario ? (
             <Entrada
-              etiqueta="Nombre de usuario"
+              etiqueta="Nombre de usuario *"
               icono={User}
               value={nombre}
               onChangeText={setNombre}
@@ -97,8 +130,33 @@ export default function Olvide() {
               error={verError || ''}
               ayuda="Su apellido y la primera letra de su nombre. Ejemplo: Juan Pérez → perezj"
             />
+            ) : (
+              <Entrada
+                etiqueta="Correo electrónico *"
+                icono={Mail}
+                value={email}
+                onChangeText={(t) => setEmail(t.replace(/\s/g, ''))}
+                onBlur={() => setTocado(true)}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="email"
+                keyboardType="email-address"
+                returnKeyType="send"
+                onSubmitEditing={enviar}
+                maxLength={254}
+                placeholder="usuario@correo.com"
+                error={verError || ''}
+                ayuda="El mismo correo con el que le crearon la cuenta."
+              />
+            )}
             {error ? <Text style={estilos.error}>{error}</Text> : null}
-            <Boton titulo={enviando ? 'Enviando…' : 'Enviar enlace'} onPress={enviar} cargando={enviando} grande />
+            <Boton
+              titulo={enviando ? 'Enviando…' : porUsuario ? 'Enviar enlace' : 'Enviar mi usuario'}
+              onPress={enviar}
+              cargando={enviando}
+              disabled={Boolean(errorCampo)}
+              grande
+            />
           </>
         )}
         <PegarEnlace />
@@ -109,3 +167,12 @@ export default function Olvide() {
     </ProveedorTemaClaro>
   )
 }
+
+// Selector "Mi contraseña / Mi usuario" (los colores son los del login, siempre claro)
+const propios = StyleSheet.create({
+  elegir: { flexDirection: 'row', gap: 4, padding: 4, marginBottom: 14, backgroundColor: '#f5f7fa', borderWidth: 1, borderColor: '#dedfe3', borderRadius: 14 },
+  opcion: { flex: 1, minHeight: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  opcionActiva: { backgroundColor: '#ffffff', elevation: 2, shadowColor: '#15121c', shadowOpacity: 0.12, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
+  opcionTexto: { color: '#88898e', fontWeight: '600', fontSize: 15 },
+  opcionTextoActiva: { color: '#533693' },
+})
