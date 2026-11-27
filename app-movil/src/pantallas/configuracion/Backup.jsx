@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Platform, Pressable, Text, View } from 'react-native'
+import { Platform, Pressable, View } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { CalendarClock, Clock, DatabaseBackup, RotateCcw, Trash2 } from 'lucide-react-native'
 import * as api from '../../api/backup'
 import { useSesion } from '../../sesion/Sesion'
 import { useTema } from '../../tema/tema'
-import { Acciones, AvisoOk, Boton, Confirmacion, Entrada, Esqueleto, Etiqueta, Fila, InterruptorCampo, Modal, Selector, Tarjeta, Texto, VacioTarjeta } from '../../ui'
+import { Acciones, AvisoOk, Boton, Confirmacion, Entrada, Esqueleto, Etiqueta, Fila, InterruptorCampo, Modal, Selector, Tarjeta, Texto, VacioTarjeta, Text } from '../../ui'
 import { useConCambios } from '../../util/validaciones'
 
 // Configuración → Backup (solo superusuarios). Backup completo (snapshot de

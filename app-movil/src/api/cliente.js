@@ -10,9 +10,22 @@
 // app no lo manda sola, así que se agrega con la dirección del servidor.
 import Constants from 'expo-constants'
 
-// Dirección del backend: EXPO_PUBLIC_API_URL (archivo .env) o "extra.apiUrl" de app.json
+// Dirección del backend, en este orden:
+//  1. EXPO_PUBLIC_API_URL del archivo .env (producción o una IP fija).
+//  2. "extra.apiUrl" de app.json, si se completó.
+//  3. En desarrollo, la IP de la compu que corre Expo (la misma que el celular
+//     usó para descargar la app con el QR) en el puerto 8000 de Django. Así no
+//     queda una IP vieja escrita a mano cuando el router asigna otra.
+const PUERTO_DJANGO = 8000
+function ipDeExpo() {
+  const host = String(Constants.expoConfig?.hostUri || '').split(':')[0]
+  return /^\d{1,3}(\.\d{1,3}){3}$/.test(host) ? `http://${host}:${PUERTO_DJANGO}` : ''
+}
 export const API_URL = String(
-  process.env.EXPO_PUBLIC_API_URL || Constants.expoConfig?.extra?.apiUrl || 'http://127.0.0.1:8000',
+  process.env.EXPO_PUBLIC_API_URL ||
+    Constants.expoConfig?.extra?.apiUrl ||
+    ipDeExpo() ||
+    `http://127.0.0.1:${PUERTO_DJANGO}`,
 ).replace(/\/+$/, '')
 
 let tokenCsrf = null
@@ -57,13 +70,20 @@ export async function pedir(url, opciones = {}) {
       headers: cabeceras({ 'Content-Type': 'application/json', ...resto.headers }),
     })
   } catch {
-    const error = new Error(`No se pudo conectar con el servidor (${API_URL}).`)
+    const error = new Error(
+      `No se pudo conectar con el servidor (${API_URL}). Verifique que Django esté encendido ` +
+        '(python manage.py runserver) y que el celular esté en la misma red Wi-Fi que la compu.',
+    )
     error.status = 0
     throw error
   } finally {
     clearTimeout(reloj)
   }
   const cuerpo = await respuesta.json().catch(() => ({}))
+  // Django responde 400 en HTML (sin JSON) cuando la IP no está en ALLOWED_HOSTS
+  if (respuesta.status === 400 && !cuerpo.error && !cuerpo.detail) {
+    cuerpo.error = `El servidor (${API_URL}) rechazó la dirección: agregue esa IP a DJANGO_ALLOWED_HOSTS en backend/.env.`
+  }
   // El backend manda el token nuevo cuando lo rota (login)
   guardarCsrf(cuerpo?.csrfToken)
   if (!respuesta.ok) {

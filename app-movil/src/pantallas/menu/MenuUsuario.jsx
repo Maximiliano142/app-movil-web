@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { router } from 'expo-router'
 import { ArrowLeftRight, LogOut, Settings } from 'lucide-react-native'
 import { useTema } from '../../tema/tema'
-import { Avatar, Modal, Texto } from '../../ui'
+import { Avatar, Modal, Texto, Text } from '../../ui'
 import { nombreDe, rolDe } from '../../util/usuario'
 
 // Usuario en la barra superior; al tocarlo muestra sus datos, "Configuración",

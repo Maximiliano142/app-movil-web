@@ -7,6 +7,9 @@ import * as FileSystem from 'expo-file-system/legacy'
 import * as Print from 'expo-print'
 import * as Sharing from 'expo-sharing'
 
+// Títulos de las dos explicaciones debajo de cada gráfico (Dashboard y estadísticas)
+export const TITULOS_EXPLICACION = ['Cómo leer este gráfico', 'Qué muestran los datos']
+
 export const esc = (texto) =>
   String(texto ?? '')
     .replace(/&/g, '&amp;')

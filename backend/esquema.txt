@@ -1,0 +1,117 @@
+27 objects imported automatically (use -v 2 for details).
+
+
+auth_group: id integer NOT NULL, name character varying NOT NULL
+    PRIMARY KEY (id)
+    UNIQUE (name)
+
+auth_group_permissions: group_id integer NOT NULL, permission_id integer NOT NULL
+    FOREIGN KEY (permission_id) REFERENCES auth_permission(id) DEFERRABLE INITIALLY DEFERRED
+    FOREIGN KEY (group_id) REFERENCES auth_group(id) DEFERRABLE INITIALLY DEFERRED
+    PRIMARY KEY (group_id, permission_id)
+
+auth_permission: id integer NOT NULL, name character varying NOT NULL, content_type_id integer NOT NULL, codename character varying NOT NULL
+    FOREIGN KEY (content_type_id) REFERENCES django_content_type(id) DEFERRABLE INITIALLY DEFERRED
+    PRIMARY KEY (id)
+    UNIQUE (content_type_id, codename)
+
+barrios: id_barrio integer NOT NULL, nombre character varying NOT NULL, geometria jsonb, id_zona integer, osm_id bigint, geometria_aproximada boolean NOT NULL
+    FOREIGN KEY (id_zona) REFERENCES zonas(id_zona) DEFERRABLE INITIALLY DEFERRED
+    PRIMARY KEY (id_barrio)
+    UNIQUE (nombre)
+    UNIQUE (osm_id)
+
+calles: id_calle integer NOT NULL, nombre character varying NOT NULL, id_barrio integer NOT NULL, geometria jsonb, id_ruta integer
+    FOREIGN KEY (id_barrio) REFERENCES barrios(id_barrio) DEFERRABLE INITIALLY DEFERRED
+    FOREIGN KEY (id_ruta) REFERENCES rutas(id_ruta) DEFERRABLE INITIALLY DEFERRED
+    PRIMARY KEY (id_calle)
+    UNIQUE (id_barrio, nombre)
+
+campanas: id_campana integer NOT NULL, nombre character varying NOT NULL, descripcion text, activa boolean NOT NULL, creada_en timestamp with time zone NOT NULL
+    PRIMARY KEY (id_campana)
+    UNIQUE (nombre)
+
+categorias: id_categoria integer NOT NULL, nombre character varying NOT NULL, descripcion text, activa boolean NOT NULL
+    PRIMARY KEY (id_categoria)
+    UNIQUE (nombre)
+
+configuracion_backup: id bigint NOT NULL, activo boolean NOT NULL, frecuencia character varying NOT NULL, dia_semana smallint NOT NULL, hora time without time zone NOT NULL, controlado_hasta timestamp with time zone, ultimo_automatico timestamp with time zone, ultimo_error text NOT NULL
+    PRIMARY KEY (id)
+
+cuestionarios: id_cuestionario integer NOT NULL, titulo character varying NOT NULL, descripcion text, activo boolean NOT NULL, creado_en timestamp with time zone NOT NULL, id_categoria integer NOT NULL
+    FOREIGN KEY (id_categoria) REFERENCES categorias(id_categoria) DEFERRABLE INITIALLY DEFERRED
+    PRIMARY KEY (id_cuestionario)
+
+django_admin_log: id integer NOT NULL, action_time timestamp with time zone NOT NULL, object_id text, object_repr character varying NOT NULL, action_flag smallint NOT NULL, change_message text NOT NULL, content_type_id integer, user_id character varying NOT NULL
+    FOREIGN KEY (content_type_id) REFERENCES django_content_type(id) DEFERRABLE INITIALLY DEFERRED
+    FOREIGN KEY (user_id) REFERENCES usuarios(documento) ON UPDATE CASCADE DEFERRABLE INITIALLY DEFERRED
+    PRIMARY KEY (id)
+
+django_content_type: id integer NOT NULL, app_label character varying NOT NULL, model character varying NOT NULL
+    PRIMARY KEY (id)
+    UNIQUE (app_label, model)
+
+django_migrations: id bigint NOT NULL, app character varying NOT NULL, name character varying NOT NULL, applied timestamp with time zone NOT NULL
+    PRIMARY KEY (id)
+
+django_session: session_key character varying NOT NULL, session_data text NOT NULL, expire_date timestamp with time zone NOT NULL
+    PRIMARY KEY (session_key)
+
+encuestados: nombre character varying, apellido character varying, documento character varying NOT NULL, latitud numeric, longitud numeric, creado_en timestamp with time zone NOT NULL
+    PRIMARY KEY (documento)
+
+encuestas: id_encuesta integer NOT NULL, latitud numeric, longitud numeric, realizada_en timestamp with time zone NOT NULL, id_cuestionario integer NOT NULL, documento_usuario character varying NOT NULL, documento_encuestado character varying NOT NULL
+    FOREIGN KEY (documento_encuestado) REFERENCES encuestados(documento) ON UPDATE CASCADE DEFERRABLE INITIALLY DEFERRED
+    FOREIGN KEY (documento_usuario, id_cuestionario) REFERENCES usuariosxcuestionarios(documento_usuario, id_cuestionario) ON UPDATE CASCADE ON DELETE RESTRICT
+    PRIMARY KEY (id_encuesta)
+    UNIQUE (documento_encuestado, id_cuestionario)
+
+equipos: id_equipo integer NOT NULL, nombre character varying NOT NULL, descripcion text, id_ruta integer NOT NULL, activo boolean NOT NULL
+    FOREIGN KEY (id_ruta) REFERENCES rutas(id_ruta) DEFERRABLE INITIALLY DEFERRED
+    PRIMARY KEY (id_equipo)
+    UNIQUE (nombre)
+
+notificaciones: id_notificacion integer NOT NULL, tipo character varying NOT NULL, titulo character varying NOT NULL, mensaje text NOT NULL, enlace character varying, leida boolean NOT NULL, leida_en timestamp with time zone, creada_en timestamp with time zone NOT NULL, documento_usuario character varying NOT NULL
+    FOREIGN KEY (documento_usuario) REFERENCES usuarios(documento) ON UPDATE CASCADE DEFERRABLE INITIALLY DEFERRED
+    PRIMARY KEY (id_notificacion)
+
+opciones: id_opcion integer NOT NULL, texto text NOT NULL, orden integer NOT NULL, id_pregunta integer NOT NULL
+    FOREIGN KEY (id_pregunta) REFERENCES preguntas(id_pregunta) DEFERRABLE INITIALLY DEFERRED
+    PRIMARY KEY (id_opcion)
+    UNIQUE (id_pregunta, orden)
+
+preferencias_notificaciones: tipo character varying NOT NULL, recibir boolean NOT NULL, documento_usuario character varying NOT NULL
+    FOREIGN KEY (documento_usuario) REFERENCES usuarios(documento) ON UPDATE CASCADE DEFERRABLE INITIALLY DEFERRED
+    PRIMARY KEY (documento_usuario, tipo)
+
+preguntas: id_pregunta integer NOT NULL, enunciado text NOT NULL, tipo character varying NOT NULL, orden integer NOT NULL, obligatoria boolean NOT NULL, id_cuestionario integer NOT NULL
+    FOREIGN KEY (id_cuestionario) REFERENCES cuestionarios(id_cuestionario) DEFERRABLE INITIALLY DEFERRED
+    PRIMARY KEY (id_pregunta)
+    UNIQUE (id_cuestionario, orden)
+
+respuesta_cargada: id_respuesta integer NOT NULL, id_opcion integer NOT NULL, latitud numeric, longitud numeric
+    FOREIGN KEY (id_opcion) REFERENCES opciones(id_opcion) DEFERRABLE INITIALLY DEFERRED
+    PRIMARY KEY (id_respuesta)
+
+rutas: id_ruta integer NOT NULL, nombre character varying NOT NULL, descripcion text, geometria jsonb, distancia_m integer, duracion_s integer, paradas jsonb NOT NULL, perfil character varying NOT NULL
+    PRIMARY KEY (id_ruta)
+    UNIQUE (nombre)
+
+usuarios: password character varying NOT NULL, last_login timestamp with time zone, is_superuser boolean NOT NULL, username character varying NOT NULL, first_name character varying NOT NULL, last_name character varying NOT NULL, is_staff boolean NOT NULL, is_active boolean NOT NULL, date_joined timestamp with time zone NOT NULL, email character varying NOT NULL, id_campana integer, documento character varying NOT NULL, telefono character varying, direccion text, id_equipo integer, id_grupo integer, foto text
+    FOREIGN KEY (id_campana) REFERENCES campanas(id_campana) DEFERRABLE INITIALLY DEFERRED
+    FOREIGN KEY (id_equipo) REFERENCES equipos(id_equipo) DEFERRABLE INITIALLY DEFERRED
+    FOREIGN KEY (id_grupo) REFERENCES auth_group(id) DEFERRABLE INITIALLY DEFERRED
+    PRIMARY KEY (documento)
+    UNIQUE (email)
+    UNIQUE (username)
+
+usuariosxcuestionarios: asignado_en timestamp with time zone NOT NULL, id_cuestionario integer NOT NULL, documento_usuario character varying NOT NULL
+    FOREIGN KEY (id_cuestionario) REFERENCES cuestionarios(id_cuestionario) DEFERRABLE INITIALLY DEFERRED
+    FOREIGN KEY (documento_usuario) REFERENCES usuarios(documento) ON UPDATE CASCADE DEFERRABLE INITIALLY DEFERRED
+    PRIMARY KEY (documento_usuario, id_cuestionario)
+
+zonas: id_zona integer NOT NULL, nombre character varying NOT NULL, geometria jsonb, color character varying NOT NULL
+    PRIMARY KEY (id_zona)
+    UNIQUE (nombre)
+
+TOTAL TABLAS: 25

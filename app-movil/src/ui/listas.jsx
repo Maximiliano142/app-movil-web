@@ -1,10 +1,10 @@
 // Piezas de las pantallas de listado: página con scroll, encabezado,
 // buscador, paginación, esqueleto de carga, aviso de "listo" e interruptor.
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
-import { Animated, Pressable, RefreshControl, ScrollView, Switch, Text, TextInput, View } from 'react-native'
+import { Animated, Pressable, RefreshControl, ScrollView, Switch, View } from 'react-native'
 import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react-native'
-import { MARCA, useTema } from '../tema/tema'
-import { Boton, Fila, Franja, Texto } from './base'
+import { MARCA, SOMBRA, useTema } from '../tema/tema'
+import { Boton, Fila, Franja, Texto, Text, TextInput } from './base'
 import { Confirmacion } from './ventanas'
 
 const ContextoPagina = createContext({ arriba: () => {} })
@@ -79,16 +79,16 @@ export function Buscador({ valor, onCambio, placeholder, etiqueta }) {
         height: 50,
         paddingHorizontal: 14,
         borderRadius: 12,
-        borderWidth: 1.5,
-        borderColor: c.borde,
+        borderWidth: 1,
+        borderColor: c.linea,
         backgroundColor: c.superficie,
+        ...(c.oscuro ? null : SOMBRA),
       }}
     >
       <Search size={19} color={c.gris} />
       <TextInput
         style={{ flex: 1, color: c.texto, fontSize: 15.5 }}
         placeholder={placeholder}
-        placeholderTextColor={c.gris}
         accessibilityLabel={etiqueta}
         value={valor}
         onChangeText={onCambio}
@@ -150,10 +150,10 @@ export function Paginacion({ pagina, paginas, total, porPagina = POR_PAGINA, irA
   const caja = (activa) => ({
     minWidth: 36,
     height: 36,
-    borderRadius: 9,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: activa ? MARCA.violeta : c.borde,
     backgroundColor: activa ? MARCA.violeta : c.superficie,
     paddingHorizontal: 6,
@@ -219,10 +219,9 @@ export function Esqueleto({ filas = 3 }) {
             alignItems: 'center',
             gap: 10,
             padding: 16,
-            borderRadius: 14,
-            borderWidth: 1,
-            borderColor: c.linea,
+            borderRadius: 18,
             backgroundColor: c.superficie,
+            ...(c.oscuro ? { borderWidth: 1, borderColor: c.linea } : SOMBRA),
           }}
         >
           <View style={{ flex: 1, gap: 8 }}>
@@ -363,7 +362,7 @@ export function Aviso({ titulo, children }) {
   const { c } = useTema()
   return (
     <View style={{ flex: 1, backgroundColor: c.fondo, padding: 16, justifyContent: 'center' }}>
-      <View style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: c.borde, borderRadius: 12, padding: 28, gap: 6, alignItems: 'center' }}>
+      <View style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: c.borde, borderRadius: 18, padding: 28, gap: 6, alignItems: 'center' }}>
         <Texto estilo="negrita" style={{ textAlign: 'center' }}>
           {titulo}
         </Texto>

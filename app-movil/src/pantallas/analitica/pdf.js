@@ -2,9 +2,8 @@
 // el informe de estadísticas: encabezado con el logo, datos del informe y cada
 // gráfico (los PNG que dibuja el servidor) con su explicación debajo.
 import { pedirImagen } from '../../api/cliente'
-import { compartirPdf, esc, ESTILOS, logoBase64 } from '../../util/pdf'
+import { compartirPdf, esc, ESTILOS, logoBase64, TITULOS_EXPLICACION } from '../../util/pdf'
 
-const TITULOS_EXPLICACION = ['Cómo leer este gráfico', 'Qué muestran los datos']
 
 export async function descargarGraficosPdf({ titulo, campana, periodo, generadoPor, graficos, archivo }) {
   const logo = await logoBase64()

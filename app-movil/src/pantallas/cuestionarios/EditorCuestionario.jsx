@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native'
 import { router, useNavigation } from 'expo-router'
 import { ArrowDown, ArrowLeft, ArrowUp, Copy, Trash2, X } from 'lucide-react-native'
 import { obtenerCategorias } from '../../api/categorias'
 import * as api from '../../api/cuestionarios'
 import { MARCA, useTema } from '../../tema/tema'
-import { Boton, Fila, InterruptorCampo, Selector, Texto, VacioTarjeta } from '../../ui'
+import { Boton, Fila, InterruptorCampo, Selector, Texto, VacioTarjeta, Text, TextInput, estiloTarjeta } from '../../ui'
 import { dejarAviso } from '../../util/avisoPendiente'
 import { variableDe } from './variable'
 
@@ -123,7 +123,6 @@ function TarjetaPregunta({ pregunta, numero, total, activa, bloqueado, onActivar
           onChangeText={(t) => cambiar({ enunciado: t })}
           onFocus={onActivar}
           placeholder="Escriba la pregunta"
-          placeholderTextColor={c.gris}
           accessibilityLabel={`Texto de la pregunta ${numero}`}
           editable={!bloqueado}
         />
@@ -138,7 +137,6 @@ function TarjetaPregunta({ pregunta, numero, total, activa, bloqueado, onActivar
             onChangeText={(t) => cambiarOpcion(o.clave, t)}
             onFocus={onActivar}
             placeholder={`Opción ${i + 1}`}
-            placeholderTextColor={c.gris}
             returnKeyType="next"
             blurOnSubmit={false}
             onSubmitEditing={() => agregarOpcion(o.clave)}
@@ -300,13 +298,12 @@ export default function EditorCuestionario({ id }) {
           </Text>
         ) : null}
 
-        <View style={{ backgroundColor: c.superficie, borderRadius: 14, borderTopWidth: 8, borderTopColor: MARCA.violeta, padding: 16, gap: 10, borderWidth: 1, borderColor: c.linea }}>
+        <View style={{ ...estiloTarjeta(c), borderTopWidth: 8, borderTopColor: MARCA.violeta, padding: 16, gap: 10 }}>
           <TextInput
             style={[campo, { fontSize: 22, fontWeight: '800' }]}
             value={form.titulo}
             onChangeText={(t) => actualizar({ titulo: t })}
             placeholder="Título del cuestionario"
-            placeholderTextColor={c.gris}
             maxLength={180}
             autoCapitalize="sentences"
           />
@@ -316,7 +313,6 @@ export default function EditorCuestionario({ id }) {
             value={form.descripcion}
             onChangeText={(t) => actualizar({ descripcion: t })}
             placeholder="Descripción"
-            placeholderTextColor={c.gris}
             maxLength={1000}
           />
           <Selector

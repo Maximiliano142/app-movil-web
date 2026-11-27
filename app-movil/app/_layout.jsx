@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import { Animated, Image, StyleSheet, Text, View } from 'react-native'
+import { Animated, Image, StyleSheet, View } from 'react-native'
 import { Stack } from 'expo-router'
+import { useFonts } from 'expo-font'
 import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ProveedorSesion, useSesion } from '../src/sesion/Sesion'
+import { FUENTES } from '../src/tema/fuentes'
 import { MARCA, ProveedorTema, useTema } from '../src/tema/tema'
 import { cargarAlmacen } from '../src/util/almacen'
+import { Text } from '../src/ui'
 
 // Pantalla de arranque: logo y tres puntos mientras se consulta la sesión
 function Arranque() {
@@ -29,7 +32,7 @@ function Arranque() {
   }, [])
   return (
     <View style={estilos.arranque} accessibilityLabel="Cargando…">
-      <Image source={require('../assets/img/logo.png')} style={{ width: 96, height: 96 }} resizeMode="contain" />
+      <Image source={require('../assets/img/logo.png')} style={{ width: 120, height: 96 }} resizeMode="contain" />
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 20 }}>
         {puntos.map((p, i) => (
           <Animated.View
@@ -38,7 +41,7 @@ function Arranque() {
           />
         ))}
       </View>
-      <Text style={{ marginTop: 12, color: '#5d5a66' }}>Cargando…</Text>
+      <Text style={{ marginTop: 12, color: '#6B7280' }}>Cargando…</Text>
     </View>
   )
 }
@@ -57,10 +60,13 @@ function Navegacion() {
 
 export default function Raiz() {
   // Lo guardado en el celular (tema, último usuario…) se lee antes de dibujar
-  const [listo, setListo] = useState(false)
+  // y las tipografías de la marca. Si las fuentes fallan, la app sigue con las del sistema.
+  const [almacenListo, setAlmacenListo] = useState(false)
+  const [fuentesCargadas, errorFuentes] = useFonts(FUENTES)
   useEffect(() => {
-    cargarAlmacen().finally(() => setListo(true))
+    cargarAlmacen().finally(() => setAlmacenListo(true))
   }, [])
+  const listo = almacenListo && (fuentesCargadas || Boolean(errorFuentes))
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

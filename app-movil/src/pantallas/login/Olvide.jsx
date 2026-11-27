@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { User } from 'lucide-react-native'
 import { pedirEnlace, ultimoUsuario } from '../../api/auth'
 import { ProveedorTemaClaro } from '../../tema/claro'
-import { Boton, Entrada } from '../../ui'
+import { Boton, Entrada, Text } from '../../ui'
 import { errorUsuario } from '../../util/validaciones'
-import FondoLogin, { estilos } from './FondoLogin'
+import FondoLogin, { AvisoAcceso, COLORES, estilos } from './FondoLogin'
 
 // El correo trae un enlace .../restablecer/UID/TOKEN. Si se abre en el celular
 // y no lleva a la app, se puede copiar y pegar acá.
@@ -20,7 +20,7 @@ function PegarEnlace() {
     router.push(`/restablecer/${m[1]}/${m[2]}`)
   }
   return (
-    <View style={{ marginTop: 22, borderTopWidth: 1, borderColor: '#d9d8df', paddingTop: 14 }}>
+    <View style={{ marginTop: 22, borderTopWidth: 1, borderColor: COLORES.linea, paddingTop: 14 }}>
       <Entrada
         etiqueta="¿Ya tiene el enlace del correo? Péguelo acá"
         value={texto}
@@ -75,9 +75,7 @@ export default function Olvide() {
         }
       >
         {enviado ? (
-          <Text style={estilos.ok} accessibilityLiveRegion="polite">
-            {enviado}
-          </Text>
+          <AvisoAcceso tipo="ok">{enviado}</AvisoAcceso>
         ) : (
           <>
             <Entrada
@@ -97,7 +95,7 @@ export default function Olvide() {
               error={verError || ''}
               ayuda="Su apellido y la primera letra de su nombre. Ejemplo: Juan Pérez → perezj"
             />
-            {error ? <Text style={estilos.error}>{error}</Text> : null}
+            <AvisoAcceso>{error}</AvisoAcceso>
             <Boton titulo={enviando ? 'Enviando…' : 'Enviar enlace'} onPress={enviar} cargando={enviando} grande />
           </>
         )}

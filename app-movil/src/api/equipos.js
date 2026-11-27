@@ -6,4 +6,3 @@ export const crearEquipo = (datos) =>
   pedir('/api/equipos/', { method: 'POST', datos }).then((r) => r.equipo)
 export const editarEquipo = (id, datos) =>
   pedir(`/api/equipos/${id}/`, { method: 'PATCH', datos }).then((r) => r.equipo)
-export const borrarEquipo = (id) => pedir(`/api/equipos/${id}/`, { method: 'DELETE' })

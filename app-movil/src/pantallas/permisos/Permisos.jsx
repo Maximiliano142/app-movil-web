@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { ScrollView, Text, View } from 'react-native'
+import { ScrollView, View } from 'react-native'
 import { Check, Minus, X } from 'lucide-react-native'
 import { obtenerPermisos } from '../../api/usuarios'
 import { MARCA, useTema } from '../../tema/tema'
-import { Boton, Encabezado, Etiqueta, Fila, Pagina, Paginacion, Selector, Tarjeta, Texto, TextoError, VacioTarjeta, usePaginado } from '../../ui'
+import { Boton, Encabezado, Etiqueta, Fila, Pagina, Paginacion, Selector, Tarjeta, Texto, TextoError, VacioTarjeta, usePaginado, Text } from '../../ui'
 
 // Permisos de Django por rol, solo para consultar. Se cambian en Gestión → Roles.
 const ACCIONES = [

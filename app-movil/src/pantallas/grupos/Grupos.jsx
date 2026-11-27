@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 import { Pencil, Trash2 } from 'lucide-react-native'
 import * as api from '../../api/grupos'
 import { MARCA, useTema } from '../../tema/tema'
 import {
+  Text,
   Acciones,
   AvisoOk,
   Boton,

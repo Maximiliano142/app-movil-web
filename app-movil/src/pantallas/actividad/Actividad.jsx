@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { Pressable, ScrollView, View } from 'react-native'
 import { Eye, EyeOff, SlidersHorizontal } from 'lucide-react-native'
 import { obtenerHistorial } from '../../api/usuarios'
 import { MARCA, useTema } from '../../tema/tema'
-import { Boton, Encabezado, Esqueleto, Fila, Pagina, Paginacion, POR_PAGINA, Selector, SelectorFecha, Tarjeta, Texto, TextoError, VacioTarjeta } from '../../ui'
+import { Boton, Encabezado, Esqueleto, Fila, Pagina, Paginacion, POR_PAGINA, Selector, SelectorFecha, Tarjeta, Texto, TextoError, VacioTarjeta, Text } from '../../ui'
 
 // Historial de actividad de la campaña activa: cada movimiento registrado en el
 // log de Django (fecha, hora, quién, qué hizo y, si editó, el valor anterior y el nuevo).

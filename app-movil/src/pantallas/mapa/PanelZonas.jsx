@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { Check, Pencil, Trash2, Undo2 } from 'lucide-react-native'
 import * as api from '../../api/mapa'
 import { MARCA, useTema } from '../../tema/tema'
-import { Acciones, Boton, BotonIcono, Confirmacion, Entrada, Fila, Paginacion, Texto, usePaginado } from '../../ui'
+import { Acciones, Boton, BotonIcono, Confirmacion, Entrada, Fila, Paginacion, Texto, usePaginado, Text } from '../../ui'
 import { COLORES_ZONA } from './formato'
 import { poligonoGeoJSON } from './geo'
 

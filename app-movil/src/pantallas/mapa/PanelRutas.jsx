@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { Pencil, Trash2, Undo2 } from 'lucide-react-native'
 import * as api from '../../api/mapa'
 import { MARCA, useTema } from '../../tema/tema'
-import { Acciones, Boton, BotonIcono, Confirmacion, Entrada, Fila, Paginacion, Selector, Texto, usePaginado } from '../../ui'
+import { Acciones, Boton, BotonIcono, Confirmacion, Entrada, Fila, Paginacion, Selector, Texto, usePaginado, Text } from '../../ui'
 import { useConCambios } from '../../util/validaciones'
 import { PERFILES, distancia, duracion } from './formato'
 

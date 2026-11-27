@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { Check, Minus } from 'lucide-react-native'
 import * as api from '../../api/cuestionarios'
 import { MARCA, useTema } from '../../tema/tema'
-import { Acciones, Boton, Casilla, Esqueleto, Etiqueta, Fila, Modal, Texto, TextoError } from '../../ui'
+import { Acciones, Boton, Casilla, Esqueleto, Etiqueta, Fila, Modal, Texto, TextoError, Text } from '../../ui'
 
 // Check de un equipo: marca o desmarca a todos sus integrantes. Queda "a medias" si solo están algunos.
 function CheckEquipo({ marcados, total, onPress, etiqueta }) {

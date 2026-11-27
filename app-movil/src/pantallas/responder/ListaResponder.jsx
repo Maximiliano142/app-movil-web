@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
 import { ArrowRight } from 'lucide-react-native'
 import * as api from '../../api/encuestas'
 import { MARCA, useTema } from '../../tema/tema'
-import { Encabezado, Esqueleto, Fila, Pagina, Paginacion, Texto, TextoError, VacioTarjeta, usePaginado } from '../../ui'
+import { Encabezado, Esqueleto, Fila, Pagina, Paginacion, Texto, TextoError, VacioTarjeta, usePaginado, Text, estiloTarjeta } from '../../ui'
 
 // Vista del militante: cuestionarios activos para cargar encuestas
 export default function ListaResponder() {
@@ -44,10 +44,8 @@ export default function ListaResponder() {
               onPress={() => router.push(`/responder/${q.id}`)}
               accessibilityRole="link"
               style={({ pressed }) => ({
-                backgroundColor: c.superficie,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: pressed ? MARCA.magenta : c.linea,
+                ...estiloTarjeta(c),
+                opacity: pressed ? 0.9 : 1,
                 borderLeftWidth: 5,
                 borderLeftColor: MARCA.magenta,
                 padding: 16,

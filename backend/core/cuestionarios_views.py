@@ -23,8 +23,8 @@ def cuestionarios_de_campana(campana):
     SQL equivalente:
         SELECT DISTINCT c.* FROM cuestionarios c
         LEFT JOIN usuariosxcuestionarios uc ON uc.id_cuestionario = c.id_cuestionario
-        LEFT JOIN usuarios u ON u.id = uc.id_usuario
-        WHERE u.id_campana = %s OR uc.id_usuario IS NULL
+        LEFT JOIN usuarios u ON u.documento = uc.documento_usuario
+        WHERE u.id_campana = %s OR uc.documento_usuario IS NULL
     """
     return Cuestionario.objects.filter(Q(usuarios__campana=campana) | Q(usuarios__isnull=True)).distinct()
 

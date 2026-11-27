@@ -51,6 +51,10 @@ python manage.py migrate
 python manage.py runserver
 ```
 
+Escucha en `0.0.0.0:8000`, así lo ve el celular por la IP de la compu (por ejemplo
+`http://192.168.100.26:8000`). En modo desarrollo esa IP se agrega sola a
+`ALLOWED_HOSTS`. Si el celular igual no conecta, ver **Problemas de conexión** abajo.
+
 ### 5. Crear un usuario para entrar
 
 ```powershell
@@ -59,12 +63,13 @@ python manage.py createsuperuser   # pide email, username y contraseña
 
 También se pueden crear usuarios desde el admin: http://127.0.0.1:8000/admin/
 
-### 6. Tests
+### 6. Comprobar el backend sin tocar Neon
 
-Corren sobre SQLite local, sin tocar Neon:
+Con una base SQLite local (el proyecto todavía no tiene tests de Django; las
+pruebas automáticas están en `app-movil`, con `npm test`):
 
 ```powershell
-$env:DATABASE_URL = "sqlite:///test.sqlite3"; python manage.py test core; Remove-Item Env:DATABASE_URL
+$env:DATABASE_URL = "sqlite:///test.sqlite3"; python manage.py check; python manage.py migrate; Remove-Item Env:DATABASE_URL
 ```
 
 ## App móvil
@@ -72,12 +77,29 @@ $env:DATABASE_URL = "sqlite:///test.sqlite3"; python manage.py test core; Remove
 ```powershell
 cd app-movil
 npm install
-copy .env.example .env    # y poner la IP de la compu: EXPO_PUBLIC_API_URL=http://192.168.0.10:8000
 npm start                 # escanear el QR con Expo Go
 ```
 
-Django tiene que escuchar en la red para que lo vea el celular:
-`python manage.py runserver 0.0.0.0:8000` (y la IP en `DJANGO_ALLOWED_HOSTS`).
+La app busca a Django en la IP de la compu que corre Expo, puerto 8000. Para usar
+otra dirección: copiar `.env.example` a `.env` y completar `EXPO_PUBLIC_API_URL`.
+
+El diseño (colores, tipografías Montserrat/Arial, barra superior, menú lateral,
+login, inicio y perfil) es el del desarrollo móvil de referencia; los colores y
+fuentes están en `app-movil/src/tema/` y las piezas comunes en `app-movil/src/ui/`.
+
+## Problemas de conexión ("No se pudo conectar con el servidor")
+
+1. **Django apagado o solo en 127.0.0.1**: levantarlo con `python manage.py runserver`
+   (ahora escucha en toda la red). Desde el navegador del celular, abrir
+   `http://IP-DE-LA-COMPU:8000/api/auth/csrf/`: tiene que responder `{"ok": true, …}`.
+2. **"rechazó la dirección" (400)**: la IP no está en `ALLOWED_HOSTS`. Con
+   `DJANGO_DEBUG=True` se agrega sola; si no, sumarla en `DJANGO_ALLOWED_HOSTS`.
+3. **Firewall de Windows**: la primera vez que corre Python, permitirlo en redes
+   privadas (o abrir el puerto 8000 en el firewall).
+4. **Otra red**: el celular y la compu tienen que estar en el mismo Wi-Fi.
+5. **Dirección mal escrita**: si hay un `app-movil/.env`, revisar que
+   `EXPO_PUBLIC_API_URL` termine en `:8000` (no `:800`). Después de cambiar el
+   `.env`, reiniciar Expo con `npx expo start -c`.
 Detalles en `app-movil/README.md`.
 
 ## Login

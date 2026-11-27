@@ -1,8 +1,8 @@
-import { Pressable, Text } from 'react-native'
+import { Pressable } from 'react-native'
 import { router } from 'expo-router'
 import { DatabaseBackup, UserRound } from 'lucide-react-native'
 import { MARCA, useTema } from '../../tema/tema'
-import { Encabezado, Fila, Pagina } from '../../ui'
+import { Encabezado, Fila, Pagina, Text, estiloTarjeta } from '../../ui'
 import Backup from './Backup'
 import MiPerfil from './MiPerfil'
 
@@ -33,7 +33,7 @@ export default function Configuracion({ usuario, onCambio, pestana = 'perfil' })
     <Pagina>
       <Encabezado titulo="Configuración" descripcion={pestana === 'backup' ? 'Copias de seguridad de la base de datos.' : 'Sus datos en el sistema.'} />
       {usuario.es_superusuario && (
-        <Fila gap={4} style={{ backgroundColor: c.superficie, borderRadius: 12, padding: 4, borderWidth: 1, borderColor: c.linea }}>
+        <Fila gap={4} style={{ ...estiloTarjeta(c), borderRadius: 14, padding: 4 }}>
           <Pestana ruta="/configuracion" activa={pestana !== 'backup'} icono={UserRound} texto="Mi perfil" />
           <Pestana ruta="/configuracion/backup" activa={pestana === 'backup'} icono={DatabaseBackup} texto="Backup" />
         </Fila>

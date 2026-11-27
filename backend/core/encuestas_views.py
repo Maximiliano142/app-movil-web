@@ -147,7 +147,7 @@ def responder(request, pk):
                 for campo, valor in encuestado_datos.items():
                     setattr(encuestado, campo, valor)
                 encuestado.save()
-            # encuestas.(id_usuario, id_cuestionario) es FK a usuariosxcuestionarios:
+            # encuestas.(documento_usuario, id_cuestionario) es FK a usuariosxcuestionarios:
             # quien carga sin estar asignado (por ejemplo, quien administra) queda asignado
             AsignacionCuestionario.objects.get_or_create(usuario=request.user, cuestionario=cuestionario)
             encuesta = Encuesta.objects.create(

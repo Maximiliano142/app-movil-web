@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { AppState, Pressable, Text, View } from 'react-native'
+import { AppState, Pressable, View } from 'react-native'
 import { router } from 'expo-router'
 import { Bell, BellOff, CirclePlus, ClipboardCheck, ClipboardList, Pencil, Trash2 } from 'lucide-react-native'
 import { obtenerAvisos } from '../../api/avisos'
 import { MARCA, useTema } from '../../tema/tema'
-import { Boton, Modal, Texto } from '../../ui'
+import { Boton, Modal, Texto, Text } from '../../ui'
 import { guardar, leer } from '../../util/almacen'
 import { tiene } from '../../util/permisos'
 
@@ -78,7 +78,7 @@ export default function Avisos({ usuario }) {
   return (
     <>
       <Pressable onPress={abrir} hitSlop={6} accessibilityLabel={sinLeer ? `Avisos: ${sinLeer} sin leer` : 'Avisos'} style={{ padding: 6 }}>
-        <Bell size={22} color={c.texto} />
+        <Bell size={22} color="#fff" />
         {sinLeer > 0 && (
           <View
             style={{
@@ -88,13 +88,15 @@ export default function Avisos({ usuario }) {
               minWidth: 18,
               height: 18,
               borderRadius: 9,
-              backgroundColor: MARCA.rojo,
+              backgroundColor: MARCA.naranja,
+              borderWidth: 1.5,
+              borderColor: MARCA.violeta,
               alignItems: 'center',
               justifyContent: 'center',
               paddingHorizontal: 4,
             }}
           >
-            <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{sinLeer > 9 ? '9+' : sinLeer}</Text>
+            <Text style={{ color: '#111', fontSize: 11, fontWeight: '800' }}>{sinLeer > 9 ? '9+' : sinLeer}</Text>
           </View>
         )}
       </Pressable>

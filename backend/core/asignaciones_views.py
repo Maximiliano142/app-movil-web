@@ -1,6 +1,6 @@
 """Asignación de cuestionarios a militantes.
 
-La tabla usuariosxcuestionarios guarda una fila por usuario (id_usuario,
+La tabla usuariosxcuestionarios guarda una fila por usuario (documento_usuario,
 id_cuestionario). En la pantalla se eligen equipos completos o personas
 sueltas, pero lo que se guarda siempre es usuario por usuario:
 - Si alguien entra a un equipo después, no recibe el cuestionario solo.
@@ -63,9 +63,10 @@ def asignaciones(request, pk):
     if datos is None:
         return error("Los datos enviados no son válidos.")
     ids = datos.get("usuarios")
-    if not isinstance(ids, list) or not all(isinstance(i, int) and not isinstance(i, bool) for i in ids):
+    if not isinstance(ids, list) or not all(isinstance(i, (str, int)) and not isinstance(i, bool) and str(i).strip() for i in ids):
         return error("La lista de usuarios no es válida.")
-    elegidos = set(ids)
+    # Los usuarios se identifican por su documento (clave primaria de usuarios)
+    elegidos = {str(i).strip() for i in ids}
     antes = _asignados(cuestionario)
 
     nuevos = elegidos - antes
@@ -74,7 +75,7 @@ def asignaciones(request, pk):
         if validos != nuevos:
             return error("Alguno de los usuarios seleccionados no existe o no está activo.")
     quitados = antes - elegidos
-    # encuestas.(id_usuario, id_cuestionario) es FK a esta asignación: a quien ya
+    # encuestas.(documento_usuario, id_cuestionario) es FK a esta asignación: a quien ya
     # cargó encuestas de este cuestionario no se le puede quitar
     con_encuestas = set(
         cuestionario.encuestas.filter(usuario_id__in=quitados).values_list("usuario_id", flat=True)

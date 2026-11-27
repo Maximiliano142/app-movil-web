@@ -1,20 +1,11 @@
 // Ventanas: modal con el aspecto de la campaña, confirmación, selector
 // (reemplaza a <select>) y elegir fecha (reemplaza a <input type="date">).
 import { useState } from 'react'
-import {
-  KeyboardAvoidingView,
-  Modal as RNModal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native'
+import { KeyboardAvoidingView, Modal as RNModal, Platform, Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { Calendar, Check, ChevronDown, X } from 'lucide-react-native'
 import { MARCA, useTema } from '../tema/tema'
-import { Boton, Fila, Texto } from './base'
+import { Boton, Fila, Texto, Text } from './base'
 
 // Ventana modal. El fondo y el botón "atrás" de Android la cierran.
 // ancho: true para ventanas grandes (formularios largos).
@@ -37,11 +28,11 @@ export function Modal({ titulo, children, onCerrar, ancho, pie }) {
               maxWidth: ancho ? Math.min(760, width - 24) : 480,
               maxHeight: height * 0.9,
               backgroundColor: c.superficie,
-              borderRadius: 18,
+              borderRadius: 24,
               overflow: 'hidden',
             }}
           >
-            <View style={{ height: 4, flexDirection: 'row' }}>
+            <View style={{ height: 5, flexDirection: 'row', borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' }}>
               {[MARCA.violeta, MARCA.celeste, MARCA.magenta, MARCA.naranja].map((col) => (
                 <View key={col} style={{ flex: 1, backgroundColor: col }} />
               ))}
@@ -125,18 +116,18 @@ export function Selector({ etiqueta, valor, opciones, onCambio, placeholder = 'S
         accessibilityRole="button"
         accessibilityLabel={`${etiqueta ?? 'Elegir'}: ${elegida?.texto ?? placeholder}`}
         style={{
-          minHeight: 46,
-          borderWidth: 1.5,
-          borderRadius: 10,
+          minHeight: 52,
+          borderWidth: 1,
+          borderRadius: 12,
           borderColor: error ? c.rojoTexto : c.borde,
-          backgroundColor: c.superficie,
-          paddingHorizontal: 12,
+          backgroundColor: error ? c.fondoError : c.campo,
+          paddingHorizontal: 14,
           flexDirection: 'row',
           alignItems: 'center',
           opacity: disabled ? 0.55 : 1,
         }}
       >
-        <Text style={{ flex: 1, color: elegida ? c.texto : c.gris, fontSize: 15.5 }} numberOfLines={1}>
+        <Text style={{ flex: 1, color: elegida ? c.texto : c.placeholder, fontSize: 16 }} numberOfLines={1}>
           {elegida?.texto ?? placeholder}
         </Text>
         <ChevronDown size={18} color={c.gris} />
@@ -203,19 +194,19 @@ export function SelectorFecha({ etiqueta, valor, onCambio, minimo, maximo, style
           accessibilityLabel={`${etiqueta ?? 'Fecha'}: ${texto}`}
           style={{
             flex: 1,
-            height: 46,
-            borderWidth: 1.5,
-            borderRadius: 10,
+            height: 52,
+            borderWidth: 1,
+            borderRadius: 12,
             borderColor: c.borde,
-            backgroundColor: c.superficie,
-            paddingHorizontal: 12,
+            backgroundColor: c.campo,
+            paddingHorizontal: 14,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
           }}
         >
           <Calendar size={17} color={c.gris} />
-          <Text style={{ color: valor ? c.texto : c.gris, fontSize: 15 }}>{texto}</Text>
+          <Text style={{ color: valor ? c.texto : c.placeholder, fontSize: 16 }}>{texto}</Text>
         </Pressable>
         {limpiable && valor ? (
           <Pressable onPress={() => onCambio('')} hitSlop={8} accessibilityLabel="Quitar fecha">

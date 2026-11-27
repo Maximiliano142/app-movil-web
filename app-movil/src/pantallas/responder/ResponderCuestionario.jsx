@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native'
 import { router } from 'expo-router'
 import { ArrowLeft, Check } from 'lucide-react-native'
 import * as api from '../../api/encuestas'
 import { MARCA, useTema } from '../../tema/tema'
-import { Boton, Entrada, Fila, Texto, VacioTarjeta } from '../../ui'
+import { Boton, Entrada, Fila, Texto, VacioTarjeta, Text, estiloTarjeta } from '../../ui'
 import { errorDocumento, errorPersona } from '../../util/validaciones'
 
 // Carga de una encuesta (datos de la persona + respuestas). Los errores se
@@ -22,10 +22,8 @@ function Pregunta({ pregunta, numero, elegidas, error, onCambio }) {
   return (
     <View
       style={{
-        backgroundColor: c.superficie,
-        borderRadius: 14,
-        borderWidth: 1.5,
-        borderColor: error ? c.rojoTexto : c.linea,
+        ...estiloTarjeta(c),
+        ...(error ? { borderWidth: 1.5, borderColor: c.rojoTexto } : null),
         padding: 14,
         gap: 8,
       }}
@@ -196,7 +194,7 @@ export default function ResponderCuestionario({ id }) {
   if (enviado) {
     return (
       <View style={{ flex: 1, padding: 16, backgroundColor: c.fondo, justifyContent: 'center' }}>
-        <View style={{ backgroundColor: c.superficie, borderRadius: 16, padding: 24, alignItems: 'center', gap: 10, borderWidth: 1, borderColor: c.linea }}>
+        <View style={{ ...estiloTarjeta(c), padding: 24, alignItems: 'center', gap: 10 }}>
           <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#1f8a5b', alignItems: 'center', justifyContent: 'center' }}>
             <Check size={34} color="#fff" strokeWidth={3} />
           </View>
@@ -222,7 +220,7 @@ export default function ResponderCuestionario({ id }) {
         </Pressable>
       </Fila>
       <ScrollView ref={scroll} contentContainerStyle={{ padding: 14, gap: 12, paddingBottom: 40, maxWidth: 800, width: '100%', alignSelf: 'center' }} keyboardShouldPersistTaps="handled">
-        <View style={{ backgroundColor: c.superficie, borderRadius: 14, borderTopWidth: 8, borderTopColor: MARCA.magenta, padding: 16, gap: 6, borderWidth: 1, borderColor: c.linea }}>
+        <View style={{ ...estiloTarjeta(c), borderTopWidth: 8, borderTopColor: MARCA.magenta, padding: 16, gap: 6 }}>
           <View style={{ alignSelf: 'flex-start', backgroundColor: c.fondoMagenta, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
             <Text style={{ color: c.magentaTexto, fontWeight: '800', fontSize: 12 }}>{cuestionario.categoria}</Text>
           </View>
@@ -241,7 +239,7 @@ export default function ResponderCuestionario({ id }) {
           </Text>
         ) : null}
 
-        <View style={{ backgroundColor: c.superficie, borderRadius: 14, borderWidth: 1, borderColor: c.linea, padding: 14 }}>
+        <View style={{ ...estiloTarjeta(c), padding: 14 }}>
           <Texto estilo="negrita" style={{ fontSize: 16, marginBottom: 10 }}>
             Datos de la persona encuestada
           </Texto>

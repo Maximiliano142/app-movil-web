@@ -17,7 +17,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.sistemapolitico.panel",
       "infoPlist": {
-        "NSAppTransportSecurity": { "NSAllowsArbitraryLoads": true },
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
         "NSPhotoLibraryUsageDescription": "Para elegir su foto de perfil.",
         "NSCameraUsageDescription": "Para sacar su foto de perfil."
       }
@@ -30,7 +32,9 @@
         "backgroundColor": "#ffffff"
       },
       "config": {
-        "googleMaps": { "apiKey": "" }
+        "googleMaps": {
+          "apiKey": ""
+        }
       }
     },
     "plugins": [
@@ -47,7 +51,7 @@
       ]
     ],
     "extra": {
-      "apiUrl": "http://192.168.100.26:8000"
+      "apiUrl": ""
     }
   }
 }

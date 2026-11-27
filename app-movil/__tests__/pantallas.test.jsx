@@ -27,6 +27,7 @@ jest.mock('lucide-react-native', () => {
   return new Proxy({ __esModule: true }, { get: (o, k) => (k in o ? o[k] : icono) })
 })
 jest.mock('expo', () => ({ useEvent: (_p, _e, inicial) => inicial }))
+jest.mock('expo-status-bar', () => ({ StatusBar: () => null }))
 jest.mock('expo-print', () => ({}))
 jest.mock('expo-sharing', () => ({}))
 jest.mock('expo-file-system/legacy', () => ({}))

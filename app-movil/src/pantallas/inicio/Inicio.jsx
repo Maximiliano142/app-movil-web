@@ -1,26 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
-import { AccessibilityInfo, Animated, Pressable, Text, View, useWindowDimensions } from 'react-native'
+import { AccessibilityInfo, Animated, Pressable, View, useWindowDimensions } from 'react-native'
 import { router } from 'expo-router'
-import { ArrowRight, Flag, Mail } from 'lucide-react-native'
+import { ArrowRight, ChevronRight, ClipboardList } from 'lucide-react-native'
 import { obtenerCuestionarios } from '../../api/cuestionarios'
 import { obtenerEncuestasPorDia, obtenerParaResponder } from '../../api/encuestas'
 import { obtenerRutas, obtenerZonas } from '../../api/mapa'
 import { MARCA, useTema } from '../../tema/tema'
-import { Avatar, Franja, Pagina, Tarjeta, Texto, isoLocal } from '../../ui'
+import { Pagina, Tarjeta, Texto, isoLocal, Text } from '../../ui'
 import { seccionesPara } from '../../util/opciones'
 import { tiene } from '../../util/permisos'
-import { nombreDe, rolDe } from '../../util/usuario'
-
-const COLORES = ['celeste', 'violeta', 'naranja', 'magenta']
+import { nombreDe } from '../../util/usuario'
 
 // Accesos de la pantalla de inicio: solo las secciones del día a día, en este orden y con su color.
 const TARJETAS = [
-  { ruta: '/cuestionarios', color: 'violeta' },
-  { ruta: '/responder', color: 'magenta' },
-  { ruta: '/mapa', color: 'celeste' },
-  { ruta: '/mi-ruta', color: 'celeste' },
-  { ruta: '/equipos', color: 'naranja' },
-  { ruta: '/usuarios', color: 'violeta' },
+  { ruta: '/cuestionarios', color: 'celeste' },
+  { ruta: '/responder', color: 'violeta' },
+  { ruta: '/mapa', color: 'magenta' },
+  { ruta: '/mi-ruta', color: 'magenta' },
+  { ruta: '/equipos', color: 'violeta' },
+  { ruta: '/usuarios', color: 'naranja' },
 ]
 const DIAS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 
@@ -143,41 +141,16 @@ export default function Inicio({ usuario }) {
     return texto.charAt(0).toUpperCase() + texto.slice(1)
   })()
 
+  const COLOR_NUMERO = [MARCA.violeta, MARCA.magenta, MARCA.naranja, MARCA.celeste]
   return (
-    <Pagina alRefrescar={cargar}>
+    <Pagina alRefrescar={cargar} style={{ gap: 12, paddingTop: 20 }}>
+      {/* Saludo */}
       <View>
-        <Texto estilo="titulo" accessibilityRole="header">
+        <Text style={{ color: c.texto, fontSize: 22, fontWeight: '800' }} titulo accessibilityRole="header">
           {saludo()}, {usuario.nombre || nombreDe(usuario)}
-        </Texto>
-        <Texto estilo="suave" style={{ marginTop: 4, marginBottom: 10 }}>
-          ¿Qué desea gestionar hoy?
-        </Texto>
-        <Franja />
+        </Text>
+        <Texto estilo="suave">¿Qué desea gestionar hoy?</Texto>
       </View>
-
-      <Tarjeta style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
-        <Avatar usuario={usuario} tamano={56} />
-        <View style={{ flex: 1, gap: 2 }}>
-          <Texto estilo="negrita" style={{ fontSize: 17 }}>
-            {nombreDe(usuario)}
-          </Texto>
-          <Text style={{ color: c.magentaTexto, fontWeight: '700', fontSize: 13 }}>{rolDe(usuario)}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Mail size={13} color={c.gris} />
-            <Texto estilo="chico" numberOfLines={1} style={{ flex: 1 }}>
-              {usuario.email}
-            </Texto>
-          </View>
-          {usuario.campana && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Flag size={13} color={c.gris} />
-              <Texto estilo="chico" numberOfLines={1}>
-                {usuario.campana.nombre}
-              </Texto>
-            </View>
-          )}
-        </View>
-      </Tarjeta>
 
       {tarjetas.length === 0 && (
         <Tarjeta>
@@ -186,78 +159,97 @@ export default function Inicio({ usuario }) {
         </Tarjeta>
       )}
 
+      {/* Resumen: números separados por líneas, cada uno con su color */}
       {(resumen === null || resumen.numeros.length > 0) && (
-        <Tarjeta style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }} accessibilityLabel="Resumen">
-          {(resumen?.numeros ?? [{ texto: 'Cargando…', valor: null }]).map((n, i) => {
-            const color = colorDe[COLORES[(i + 1) % COLORES.length]]
-            return (
-              <View key={n.texto} style={{ flexBasis: '46%', flexGrow: 1, borderLeftWidth: 4, borderLeftColor: color, paddingLeft: 10, paddingVertical: 4 }}>
-                {resumen && n.valor != null ? (
-                  <Contador valor={n.valor} style={{ color: c.texto, fontSize: 26, fontWeight: '800' }} />
-                ) : (
-                  <Text style={{ color: c.texto, fontSize: 26, fontWeight: '800' }}>{resumen ? '–' : '·'}</Text>
-                )}
-                <Texto estilo="chico">{n.texto}</Texto>
-              </View>
-            )
-          })}
+        <Tarjeta style={{ flexDirection: 'row', flexWrap: 'wrap', paddingVertical: 12, paddingHorizontal: 4 }} accessibilityLabel="Resumen">
+          {(resumen?.numeros ?? [{ texto: 'Cargando…', valor: null }]).map((n, i) => (
+            <View
+              key={n.texto}
+              style={{
+                flexGrow: 1,
+                flexBasis: width >= 700 ? 0 : '45%',
+                alignItems: 'center',
+                paddingVertical: 4,
+                paddingHorizontal: 4,
+                borderLeftWidth: i % (width >= 700 ? 4 : 2) === 0 ? 0 : 1,
+                borderLeftColor: c.linea,
+              }}
+            >
+              {resumen && n.valor != null ? (
+                <Contador valor={n.valor} style={{ color: COLOR_NUMERO[i % 4], fontSize: 22, fontWeight: '800' }} />
+              ) : (
+                <Text style={{ color: COLOR_NUMERO[i % 4], fontSize: 22, fontWeight: '800' }}>{resumen ? '–' : '·'}</Text>
+              )}
+              <Texto estilo="chico" style={{ textAlign: 'center', fontSize: 11.5 }}>
+                {n.texto}
+              </Texto>
+            </View>
+          ))}
         </Tarjeta>
       )}
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }} accessibilityLabel="Secciones">
-        {tarjetas.map(({ ruta, texto, descripcion, icono: Icono, color }, i) => {
-          const grande = tarjetas.length % columnas !== 0 && i < tarjetas.length % columnas
-          return (
-            <Pressable
-              key={ruta}
-              onPress={() => router.navigate(ruta)}
-              accessibilityRole="link"
-              style={({ pressed }) => ({
-                flexBasis: grande && tarjetas.length % columnas === 1 ? '100%' : `${100 / columnas - 2}%`,
-                flexGrow: 1,
-                minHeight: 120,
-                backgroundColor: colorDe[color],
-                borderRadius: 16,
-                padding: 14,
-                justifyContent: 'space-between',
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              })}
-            >
-              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.22)', alignItems: 'center', justifyContent: 'center' }}>
-                <Icono size={22} color="#fff" />
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>{texto}</Text>
-                  {descripcion ? <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12.5 }}>{descripcion}</Text> : null}
-                </View>
-                <ArrowRight size={16} color="#fff" />
-              </View>
-            </Pressable>
-          )
-        })}
+      {/* Accesos directos: tarjetas de color con ícono, título y flecha */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 }} accessibilityLabel="Secciones">
+        {tarjetas.map(({ ruta, texto, descripcion, icono: Icono, color }) => (
+          <Pressable
+            key={ruta}
+            onPress={() => router.navigate(ruta)}
+            accessibilityRole="link"
+            accessibilityLabel={descripcion ? `${texto}: ${descripcion}` : texto}
+            android_ripple={{ color: 'rgba(255,255,255,0.25)' }}
+            style={({ pressed }) => ({
+              width: columnas === 3 ? '32%' : '48.5%',
+              minHeight: 116,
+              backgroundColor: colorDe[color],
+              borderRadius: 15,
+              padding: 12,
+              overflow: 'hidden',
+              justifyContent: 'space-between',
+              opacity: pressed ? 0.85 : 1,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
+            })}
+          >
+            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.28)', alignItems: 'center', justifyContent: 'center' }}>
+              <Icono size={18} color="#fff" />
+            </View>
+            <View style={{ paddingRight: 26 }}>
+              <Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }} titulo>
+                {texto}
+              </Text>
+              {descripcion ? <Text style={{ color: 'rgba(255,255,255,0.88)', fontSize: 11.5 }}>{descripcion}</Text> : null}
+            </View>
+            <View style={{ position: 'absolute', right: 10, bottom: 11, width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' }}>
+              <ArrowRight size={15} color="#fff" />
+            </View>
+          </Pressable>
+        ))}
       </View>
 
-      <Tarjeta style={{ gap: 12 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Texto estilo="subtitulo">Esta semana</Texto>
-          <Texto estilo="suave">{mes}</Texto>
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+      {/* Calendario de la semana con las encuestas cargadas por día */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
+        <Text style={{ color: c.texto, fontSize: 15, fontWeight: '800' }} titulo>
+          Esta semana
+        </Text>
+        <Texto estilo="chico">{mes}</Texto>
+      </View>
+      <Tarjeta style={{ gap: 10, paddingVertical: 13, paddingHorizontal: 6 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
           {semana.map((d, i) => (
-            <View key={i} style={{ alignItems: 'center', gap: 4, flex: 1 }} accessibilityLabel={d.futuro || !porDia ? undefined : `${porDia[d.fecha] ?? 0} encuestas`}>
-              <Texto estilo="chico">{d.dia}</Texto>
+            <View key={i} style={{ alignItems: 'center', gap: 6, flex: 1 }} accessibilityLabel={d.futuro || !porDia ? undefined : `${porDia[d.fecha] ?? 0} encuestas`}>
+              <Texto estilo="chico" style={{ fontSize: 11 }}>
+                {d.dia}
+              </Texto>
               <View
                 style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
+                  width: 30,
+                  height: 30,
+                  borderRadius: 15,
                   alignItems: 'center',
                   justifyContent: 'center',
                   backgroundColor: d.esHoy ? MARCA.violeta : 'transparent',
                 }}
               >
-                <Text style={{ color: d.esHoy ? '#fff' : c.texto, fontWeight: '700' }}>{d.numero}</Text>
+                <Text style={{ color: d.esHoy ? '#fff' : c.texto, fontSize: 13, fontWeight: '700' }}>{d.numero}</Text>
               </View>
               {porDia && (
                 <View style={{ height: 80, justifyContent: 'flex-end', alignItems: 'center' }}>
@@ -275,35 +267,61 @@ export default function Inicio({ usuario }) {
           ))}
         </View>
         {porDia && (
-          <Texto estilo="suave" style={{ textAlign: 'center' }}>
+          <Texto estilo="chico" style={{ textAlign: 'center' }}>
             {totalSemana === 1 ? '1 encuesta cargada' : `${totalSemana} encuestas cargadas`} esta semana
           </Texto>
         )}
       </Tarjeta>
 
       {tiene(usuario, 'core.view_cuestionario') && (
-        <Tarjeta style={{ gap: 8 }}>
-          <Texto estilo="subtitulo">Últimos cuestionarios</Texto>
-          {resumen === null ? (
-            <Texto estilo="suave">Cargando…</Texto>
-          ) : resumen.ultimos.length === 0 ? (
-            <Texto estilo="suave">Cuando se creen cuestionarios, aquí se mostrarán los últimos.</Texto>
-          ) : (
-            resumen.ultimos.map((q) => (
-              <Pressable
-                key={q.id}
-                onPress={() => router.navigate(tiene(usuario, 'core.view_encuesta') ? `/cuestionarios/${q.id}/estadisticas` : `/cuestionarios/${q.id}`)}
-                style={({ pressed }) => ({ padding: 10, borderRadius: 10, backgroundColor: pressed ? c.superficie2 : c.fondo })}
-              >
-                <Texto estilo="negrita">{q.titulo}</Texto>
-                <Texto estilo="chico">
-                  {fechaCorta(q.creado_en)} · {q.encuestas === 1 ? '1 encuesta' : `${q.encuestas} encuestas`}
-                </Texto>
-              </Pressable>
-            ))
-          )}
-        </Tarjeta>
+        <>
+          <Text style={{ color: c.texto, fontSize: 15, fontWeight: '800', marginTop: 2 }} titulo>
+            Últimos cuestionarios
+          </Text>
+          <Tarjeta style={{ gap: 4, padding: 8 }}>
+            {resumen === null ? (
+              <Texto estilo="suave" style={{ padding: 8 }}>
+                Cargando…
+              </Texto>
+            ) : resumen.ultimos.length === 0 ? (
+              <Texto estilo="suave" style={{ padding: 8 }}>
+                Cuando se creen cuestionarios, aquí se mostrarán los últimos.
+              </Texto>
+            ) : (
+              resumen.ultimos.map((q) => (
+                <Pressable
+                  key={q.id}
+                  onPress={() => router.navigate(tiene(usuario, 'core.view_encuesta') ? `/cuestionarios/${q.id}/estadisticas` : `/cuestionarios/${q.id}`)}
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 12, backgroundColor: pressed ? c.superficie2 : 'transparent' })}
+                >
+                  <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: c.superficie2, alignItems: 'center', justifyContent: 'center' }}>
+                    <ClipboardList size={18} color={c.violetaTexto} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Texto estilo="negrita" numberOfLines={1}>
+                      {q.titulo}
+                    </Texto>
+                    <Texto estilo="chico">
+                      {fechaCorta(q.creado_en)} · {q.encuestas === 1 ? '1 encuesta' : `${q.encuestas} encuestas`}
+                    </Texto>
+                  </View>
+                  <ChevronRight size={18} color={c.gris} />
+                </Pressable>
+              ))
+            )}
+          </Tarjeta>
+        </>
       )}
+
+      {/* Identidad visual al pie del panel */}
+      <View style={{ alignItems: 'center', marginTop: 6 }}>
+        <View style={{ flexDirection: 'row', width: 43, height: 2, marginBottom: 5 }}>
+          {[MARCA.celeste, MARCA.magenta, MARCA.naranja].map((color) => (
+            <View key={color} style={{ flex: 1, backgroundColor: color }} />
+          ))}
+        </View>
+        <Text style={{ color: c.gris, fontSize: 9, letterSpacing: 0.4 }}>GESTIÓN Y ORGANIZACIÓN · La Libertad Avanza</Text>
+      </View>
     </Pagina>
   )
 }

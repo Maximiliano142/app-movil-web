@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Image, Pressable, ScrollView, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import Svg, { Path } from 'react-native-svg'
+import { Image, Pressable, ScrollView, View } from 'react-native'
+import { StatusBar } from 'expo-status-bar'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowRight, Pencil, Plus } from 'lucide-react-native'
 import * as api from '../../api/campanas'
 import { MARCA, useTema } from '../../tema/tema'
 import {
+  Text,
+  estiloTarjeta,
   Acciones,
   Boton,
   BotonIcono,
@@ -76,6 +78,7 @@ const resumen = (c) =>
 // se crean campañas nuevas y se activan o desactivan.
 export default function ElegirCampana({ usuario, onElegida, onSalir }) {
   const { c } = useTema()
+  const insets = useSafeAreaInsets()
   const [campanas, setCampanas] = useState(null)
   const [error, setError] = useState('')
   const [entrando, setEntrando] = useState(null)
@@ -117,21 +120,27 @@ export default function ElegirCampana({ usuario, onElegida, onSalir }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.fondo }}>
-      <Svg style={{ position: 'absolute', top: 0, right: 0 }} width={220} height={90} viewBox="0 0 400 140" preserveAspectRatio="none">
-        <Path d="M0 0h400v140c-40 6-80-2-110-22C250 92 215 50 160 48 105 46 60 70 0 104Z" fill={MARCA.violeta} />
-      </Svg>
-      <SafeAreaView style={{ flex: 1 }}>
+      <StatusBar style="light" />
+      {/* Cabecera violeta del desarrollo móvil */}
+      <View style={{ backgroundColor: MARCA.violeta, paddingTop: insets.top + 10, paddingBottom: 22, paddingHorizontal: 20, borderBottomLeftRadius: 26, borderBottomRightRadius: 26 }}>
+        <View style={{ width: '100%', maxWidth: 760, alignSelf: 'center', gap: 10 }}>
+          <Fila gap={12}>
+            <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+              <Image source={require('../../../assets/img/logo.png')} style={{ width: 44, height: 36 }} resizeMode="contain" accessibilityLabel="Logo" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#fff', fontSize: 22, fontWeight: '800' }} titulo accessibilityRole="header">
+                Seleccione la campaña
+              </Text>
+              <Text style={{ color: MARCA.violetaClaro, fontSize: 13 }}>Bienvenido/a, {usuario.nombre || usuario.email}</Text>
+            </View>
+            <Franja ancho={48} />
+          </Fila>
+        </View>
+      </View>
+      <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>
         <ScrollView contentContainerStyle={{ padding: 20, gap: 14, maxWidth: 760, width: '100%', alignSelf: 'center' }}>
-          <Image source={require('../../../assets/img/logo.png')} style={{ width: 64, height: 64 }} resizeMode="contain" />
-          <View>
-            <Texto estilo="titulo" accessibilityRole="header">
-              Seleccione la campaña
-            </Texto>
-            <Texto estilo="suave" style={{ marginTop: 4, marginBottom: 10 }}>
-              Bienvenido/a, {usuario.nombre || usuario.email}. Seleccione la campaña en la que va a trabajar: se mostrarán solo sus datos.
-            </Texto>
-            <Franja />
-          </View>
+          <Texto estilo="suave">Seleccione la campaña en la que va a trabajar: se mostrarán solo sus datos.</Texto>
           {puedeCrear && <Boton titulo="Nueva campaña" icono={Plus} onPress={() => setEditando('nueva')} grande />}
           <TextoError>{error}</TextoError>
 
@@ -151,10 +160,9 @@ export default function ElegirCampana({ usuario, onElegida, onSalir }) {
                     accessibilityRole="button"
                     style={({ pressed }) => ({
                       flex: 1,
-                      backgroundColor: c.superficie,
-                      borderRadius: 14,
-                      borderWidth: 1.5,
-                      borderColor: pressed ? MARCA.violeta : c.linea,
+                      ...estiloTarjeta(c),
+                      borderLeftWidth: 4,
+                      borderLeftColor: pressed ? MARCA.magenta : MARCA.violeta,
                       padding: 16,
                       gap: 4,
                       opacity: entrando !== null && entrando !== x.id ? 0.6 : 1,

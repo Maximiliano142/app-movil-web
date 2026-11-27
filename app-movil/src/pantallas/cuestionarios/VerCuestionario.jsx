@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 import { Users } from 'lucide-react-native'
 import * as api from '../../api/cuestionarios'
 import { MARCA, useTema } from '../../tema/tema'
-import { Acciones, Boton, Esqueleto, Etiqueta, Fila, Modal, Texto, TextoError } from '../../ui'
+import { Acciones, Boton, Esqueleto, Etiqueta, Fila, Modal, Texto, TextoError, Text } from '../../ui'
 import { tiene } from '../../util/permisos'
 
 const plural = (n, uno, varios) => (n === 1 ? `1 ${uno}` : `${n} ${varios}`)

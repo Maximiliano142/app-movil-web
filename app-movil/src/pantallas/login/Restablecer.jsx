@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 import { router } from 'expo-router'
-import { Lock } from 'lucide-react-native'
+import { Circle, CircleCheck, Lock } from 'lucide-react-native'
 import { comprobarEnlace, restablecerContrasena } from '../../api/auth'
 import { ProveedorTemaClaro } from '../../tema/claro'
-import { Boton, Entrada } from '../../ui'
+import { Boton, Entrada, Text } from '../../ui'
 import { contrasenaValida, MENSAJE_CONTRASENA, requisitosContrasena } from '../../util/validaciones'
-import FondoLogin, { estilos } from './FondoLogin'
+import FondoLogin, { AvisoAcceso, COLORES, estilos } from './FondoLogin'
 
 // Pantalla del enlace que llega por correo (sistemapolitico://restablecer/UID/TOKEN
 // o la dirección web configurada): elegir la contraseña (la primera vez, desde
@@ -96,9 +96,10 @@ export default function Restablecer({ uid, token }) {
             />
             <View style={{ marginTop: -4, marginBottom: 12, gap: 2 }} accessibilityLabel="Requisitos de la contraseña">
               {requisitosContrasena(password).map((r) => (
-                <Text key={r.texto} style={{ color: r.ok ? '#1f7a50' : '#5d5a66', fontSize: 13 }}>
-                  {r.ok ? '✓' : '○'} {r.texto}
-                </Text>
+                <View key={r.texto} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  {r.ok ? <CircleCheck size={15} color={COLORES.ok} /> : <Circle size={15} color={COLORES.gris} />}
+                  <Text style={{ color: r.ok ? COLORES.ok : COLORES.gris, fontSize: 13 }}>{r.texto}</Text>
+                </View>
               ))}
             </View>
             <Entrada
@@ -118,10 +119,10 @@ export default function Restablecer({ uid, token }) {
               placeholder="••••••••"
               error={verError('repetida')}
             />
-            {coinciden ? <Text style={{ color: '#1f7a50', marginTop: -6, marginBottom: 12 }}>✓ Las contraseñas coinciden.</Text> : null}
+            {coinciden ? <Text style={{ color: COLORES.ok, fontSize: 13, marginTop: -6, marginBottom: 12 }}>✓ Las contraseñas coinciden.</Text> : null}
           </>
         )}
-        {error ? <Text style={estilos.error}>{error}</Text> : null}
+        <AvisoAcceso>{error}</AvisoAcceso>
         {estado === 'formulario' && (
           <Boton titulo={guardando ? 'Guardando…' : 'Guardar contraseña'} onPress={guardar} cargando={guardando} grande />
         )}

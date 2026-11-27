@@ -1,7 +1,8 @@
 // Punto numerado de una ruta (en la web era un divIcon de Leaflet)
 import { useEffect, useState } from 'react'
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 import { Marker } from 'react-native-maps'
+import { Text } from '../../ui'
 
 export default function Parada({ coordenada, numero, color = '#c3268c', arrastrable, onArrastrar, onPress }) {
   // Android dibuja el marcador una vez: se deja seguir cambios un momento y después se congela

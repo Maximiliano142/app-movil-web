@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Pressable, View } from 'react-native'
-import { Camera, Image as IconoImagen, KeyRound, Pencil, Trash2 } from 'lucide-react-native'
+import { Camera, Image as IconoImagen, KeyRound, Pencil } from 'lucide-react-native'
 import { guardarFoto, guardarPerfil, pedirCambioDeContrasena, quitarFoto, usuarioActual } from '../../api/auth'
 import { MARCA, useTema } from '../../tema/tema'
-import { Acciones, Avatar, AvisoOk, Boton, Confirmacion, Entrada, Fila, Modal, Tarjeta, Texto, TextoError } from '../../ui'
+import { Acciones, Avatar, AvisoOk, Boton, Confirmacion, Entrada, Fila, Modal, Tarjeta, Text, Texto, TextoError } from '../../ui'
+import { nombreDe, rolDe } from '../../util/usuario'
 import { errorEmail, errorPersona, useConCambios } from '../../util/validaciones'
 import FichaUsuario from '../perfil/FichaUsuario'
 import { elegirFotoCuadrada } from './foto'
@@ -144,29 +145,43 @@ export default function MiPerfil({ usuario, onCambio }) {
     )
   }
 
-  const avatar = (
-    <Pressable onPress={() => setConfirmando('origen')} disabled={subiendo} accessibilityLabel="Cambiar la foto de perfil">
-      <Avatar usuario={usuario} tamano={72} />
-      <View style={{ position: 'absolute', right: -2, bottom: -2, width: 28, height: 28, borderRadius: 14, backgroundColor: MARCA.magenta, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: c.superficie }}>
-        <Camera size={14} color="#fff" />
-      </View>
-    </Pressable>
-  )
-
   return (
     <>
+      {/* Cabecera violeta del desarrollo móvil: foto, nombre y rol */}
+      <View style={{ alignItems: 'center', backgroundColor: MARCA.violeta, borderRadius: 26, paddingTop: 22, paddingBottom: 22, paddingHorizontal: 16 }}>
+        <Pressable onPress={() => setConfirmando('origen')} disabled={subiendo} accessibilityRole="button" accessibilityLabel="Cambiar la foto de perfil">
+          <Avatar usuario={usuario} tamano={88} />
+          <View style={{ position: 'absolute', right: -2, bottom: -2, width: 30, height: 30, borderRadius: 15, backgroundColor: MARCA.naranja, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff' }}>
+            <Camera size={15} color="#111" />
+          </View>
+        </Pressable>
+        {usuario.foto ? (
+          <Text onPress={() => setConfirmando('foto')} accessibilityRole="button" style={{ color: MARCA.violetaClaro, fontSize: 13, fontWeight: '700', textDecorationLine: 'underline', marginTop: 8 }}>
+            Quitar foto
+          </Text>
+        ) : null}
+        <Text style={{ color: '#fff', fontSize: 22, fontWeight: '800', textAlign: 'center', marginTop: 12 }} titulo>
+          {nombreDe(usuario)}
+        </Text>
+        <View style={{ marginTop: 8, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, backgroundColor: MARCA.naranja }}>
+          <Text style={{ color: '#111', fontSize: 13, fontWeight: '700' }}>{rolDe(usuario)}</Text>
+        </View>
+      </View>
+
       <View style={{ gap: 8 }}>
-        <Boton titulo="Editar mis datos" icono={Pencil} onPress={() => setEditando(true)} />
+        <Boton titulo="Editar mis datos" icono={Pencil} onPress={() => setEditando(true)} grande />
         <Fila gap={8}>
           <Boton flex titulo={subiendo ? 'Subiendo…' : usuario.foto ? 'Cambiar foto' : 'Subir foto'} icono={Camera} variante="borde" onPress={() => setConfirmando('origen')} cargando={subiendo} />
-          {usuario.foto ? <Boton flex titulo="Quitar foto" icono={Trash2} variante="borde" onPress={() => setConfirmando('foto')} /> : null}
+          <Boton flex titulo="Contraseña" icono={KeyRound} variante="borde" onPress={() => setConfirmando('contrasena')} />
         </Fila>
-        <Boton titulo="Cambiar contraseña" icono={KeyRound} variante="borde" onPress={() => setConfirmando('contrasena')} />
       </View>
       <AvisoOk>{aviso}</AvisoOk>
       <TextoError>{error}</TextoError>
       <Tarjeta>
-        <FichaUsuario usuario={usuario} campana={usuario.campana?.nombre ?? ''} avatar={avatar} />
+        <Text style={{ color: c.texto, fontSize: 16, fontWeight: '800', marginBottom: 4 }} titulo>
+          Mis datos
+        </Text>
+        <FichaUsuario usuario={usuario} campana={usuario.campana?.nombre ?? ''} sinCabecera />
       </Tarjeta>
 
       {editando && <EditarDatos usuario={usuario} onGuardado={guardado} onCerrar={() => setEditando(false)} />}

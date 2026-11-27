@@ -3,8 +3,7 @@ import unicodedata
 from datetime import time
 
 from django.conf import settings
-from django.contrib.auth.models import AbstractUser, Permission
-from django.core.exceptions import ValidationError
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
 
@@ -247,7 +246,7 @@ class Usuario(AbstractUser):
     )
     # Rol del usuario: FK a la tabla de grupos de Django (auth_group). Un
     # usuario tiene un solo grupo y un grupo muchos usuarios. Los permisos se
-    # toman de ese grupo (usuarios_groups se mantiene igual a este campo).
+    # toman de ese grupo (ver core/permisos.py).
     grupo = models.ForeignKey(
         "auth.Group",
         on_delete=models.SET_NULL,
@@ -258,7 +257,8 @@ class Usuario(AbstractUser):
     )
 
     # Datos de la persona (antes estaban en la tabla militantes)
-    documento = models.CharField(max_length=30, unique=True, null=True, blank=True)
+    # Clave primaria de la tabla usuarios (en Neon ya no existe la columna id)
+    documento = models.CharField(max_length=30, primary_key=True)
     telefono = models.CharField(max_length=40, blank=True, null=True)
     direccion = models.TextField(blank=True, null=True)
     # Foto de perfil: imagen chica (256 px) como "data:image/jpeg;base64,...".
@@ -274,7 +274,14 @@ class Usuario(AbstractUser):
     )
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["username"]
+    REQUIRED_FIELDS = ["username", "documento"]
+
+    # En la base no existen las tablas usuarios_groups ni
+    # usuarios_user_permissions: el rol es solo usuarios.id_grupo (campo grupo)
+    # y los permisos salen de ese rol (core/permisos.py). Se quitan los campos
+    # muchos-a-muchos que AbstractUser trae por defecto.
+    groups = None
+    user_permissions = None
 
     class Meta:
         db_table = "usuarios"
@@ -316,12 +323,11 @@ class ConfiguracionBackup(models.Model):
 
 
 class Encuestado(models.Model):
-    id_encuestado = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100, blank=True, null=True)
     apellido = models.CharField(max_length=100, blank=True, null=True)
-    # Único: identifica a la persona. Que responda una sola vez cada
+    # Clave primaria: identifica a la persona. Que responda una sola vez cada
     # cuestionario lo controla Encuesta (uq_encuesta_encuestado_cuestionario).
-    documento = models.CharField(max_length=30, unique=True)
+    documento = models.CharField(max_length=30, primary_key=True)
     # Quién lo encuestó y con qué cuestionario queda en la tabla encuestas.
 
     # Ubicación del domicilio para mostrarlo como punto en el mapa
@@ -403,14 +409,14 @@ class Cuestionario(models.Model):
 
 
 class AsignacionCuestionario(models.Model):
-    # Clave primaria compuesta (id_usuario, id_cuestionario), sin id propio.
-    # encuestas.(id_usuario, id_cuestionario) es FK a esta tabla (la crea la
-    # migración 0020 en la base: Django no maneja FK hacia claves compuestas).
+    # Clave primaria compuesta (documento_usuario, id_cuestionario), sin id propio.
+    # encuestas.(documento_usuario, id_cuestionario) es FK a esta tabla (está
+    # en la base: Django no maneja FK hacia claves compuestas).
     pk = models.CompositePrimaryKey("usuario", "cuestionario")
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
-        db_column="id_usuario",
+        db_column="documento_usuario",
     )
     cuestionario = models.ForeignKey(
         Cuestionario,
@@ -514,7 +520,7 @@ class Encuesta(models.Model):
     encuestado = models.ForeignKey(
         Encuestado,
         on_delete=models.PROTECT,
-        db_column="id_encuestado",
+        db_column="documento_encuestado",
         related_name="encuestas",
     )
     cuestionario = models.ForeignKey(
@@ -527,7 +533,7 @@ class Encuesta(models.Model):
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
-        db_column="id_usuario",
+        db_column="documento_usuario",
         null=True,
         blank=True,
         related_name="encuestas_cargadas",

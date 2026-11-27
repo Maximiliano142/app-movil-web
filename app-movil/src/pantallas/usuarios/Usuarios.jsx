@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { Eye, KeyRound, Pencil } from 'lucide-react-native'
 import * as api from '../../api/usuarios'
 import { MARCA, useTema } from '../../tema/tema'
 import {
+  Text,
+  Avatar,
   Acciones,
   AvisoOk,
   Boton,
@@ -123,7 +125,18 @@ function FormularioUsuario({ usuario, grupos, onGuardado, onCerrar }) {
         ))}
       </View>
       <Fila gap={10} style={{ alignItems: 'flex-start' }}>
-        <Entrada style={{ flex: 1 }} etiqueta="Documento" keyboardType="number-pad" maxLength={10} placeholder="Sin puntos" value={form.documento} onChangeText={cambiar('documento')} />
+        <Entrada
+          style={{ flex: 1 }}
+          etiqueta="Documento"
+          keyboardType="number-pad"
+          maxLength={10}
+          placeholder="Sin puntos"
+          value={form.documento}
+          onChangeText={cambiar('documento')}
+          // El documento identifica al usuario (clave primaria): se carga al crearlo y no se cambia
+          editable={!usuario}
+          ayuda={usuario ? 'No se puede modificar.' : undefined}
+        />
         <Entrada style={{ flex: 1 }} etiqueta="Teléfono" keyboardType="phone-pad" maxLength={20} value={form.telefono} onChangeText={cambiar('telefono')} />
       </Fila>
       <Entrada etiqueta="Dirección (opcional)" autoCapitalize="sentences" maxLength={200} value={form.direccion} onChangeText={cambiar('direccion')} />
@@ -234,12 +247,7 @@ export default function Usuarios({ usuario: yo }) {
           {paginado.items.map((u) => (
             <Tarjeta key={u.id} apagada={!u.activo} style={{ gap: 10 }}>
               <Fila gap={12} style={{ alignItems: 'flex-start' }}>
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: MARCA.violeta, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: '#fff', fontWeight: '800' }}>
-                    {(u.nombre[0] ?? u.email[0]).toUpperCase()}
-                    {(u.apellido[0] ?? '').toUpperCase()}
-                  </Text>
-                </View>
+                <Avatar usuario={u} tamano={46} />
                 <View style={{ flex: 1, gap: 3 }}>
                   <Fila envolver gap={6}>
                     <Texto estilo="negrita" style={{ fontSize: 16 }}>

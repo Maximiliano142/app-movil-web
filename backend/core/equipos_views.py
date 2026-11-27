@@ -128,9 +128,10 @@ def _validar_usuarios(request, datos, equipo=None):
     if ids is None:
         # Al crear, los usuarios son obligatorios; al editar, si no vienen no se tocan
         return (None, SIN_USUARIOS) if equipo is None else (None, None)
-    if not isinstance(ids, list) or not all(isinstance(i, int) and not isinstance(i, bool) for i in ids):
+    if not isinstance(ids, list) or not all(isinstance(i, (str, int)) and not isinstance(i, bool) and str(i).strip() for i in ids):
         return None, "La lista de usuarios no es válida."
-    ids = set(ids)
+    # Los usuarios se identifican por su documento (clave primaria de usuarios)
+    ids = {str(i).strip() for i in ids}
     if not ids:
         return None, SIN_USUARIOS
 

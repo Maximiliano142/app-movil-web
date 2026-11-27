@@ -15,30 +15,26 @@ cd app-movil
 npm install
 ```
 
-## 2. Decirle a la app dónde está el backend
+## 2. Dónde está el backend
 
-Copiar `.env.example` a `.env` y poner la dirección de Django **vista desde el celular**:
+En desarrollo no hace falta configurar nada: la app usa la IP de la compu que
+corre Expo (la misma del QR) con el puerto 8000 de Django. Para otra dirección
+(producción, u otra máquina) copiar `.env.example` a `.env` y completar:
 
 ```
 EXPO_PUBLIC_API_URL=http://192.168.0.10:8000
 ```
 
-En desarrollo es la IP de la compu en la red Wi‑Fi (`ipconfig` en Windows). No sirve
-`127.0.0.1`: para el celular eso es el propio celular.
+No sirve `127.0.0.1`: para el celular eso es el propio celular.
 
 ## 3. Levantar Django para que lo vea el celular
 
-En `backend/.env` agregar la IP a los hosts permitidos:
-
-```
-DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,192.168.0.10
-```
-
-y levantar el servidor escuchando en la red:
-
 ```powershell
-python manage.py runserver 0.0.0.0:8000
+python manage.py runserver
 ```
+
+Escucha en toda la red (`0.0.0.0:8000`) y, en modo desarrollo, acepta sola la IP
+de la compu. Si no conecta, ver "Problemas de conexión" en el README principal.
 
 ## 4. Abrir la app
 
@@ -73,7 +69,7 @@ app-movil/
 │   ├── pantallas/         una carpeta por sección (igual que components/ en la web)
 │   ├── ui/                piezas comunes: botones, campos, ventanas, listas, paginación…
 │   ├── sesion/            usuario conectado y protección de cada pantalla por permiso
-│   ├── tema/              colores de la campaña y modo oscuro
+│   ├── tema/              colores, tipografías (Montserrat / Arimo) y modo oscuro
 │   └── util/              validaciones, permisos, menú, PDF, almacenamiento
 └── assets/                logo, fondo y videos de los tutoriales
 ```

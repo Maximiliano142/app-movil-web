@@ -1,10 +1,12 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { router, useFocusEffect } from 'expo-router'
 import { ChartColumn, Eye, Pencil, Trash2, UserPlus } from 'lucide-react-native'
 import * as api from '../../api/cuestionarios'
 import { MARCA, useTema } from '../../tema/tema'
 import {
+  estiloTarjeta,
+  Text,
   AvisoOk,
   Boton,
   BotonIcono,
@@ -148,10 +150,10 @@ export default function ListaCuestionarios({ usuario }) {
       ) : (
         <>
           {paginado.items.map((x) => (
-            <View key={x.id} style={{ backgroundColor: c.superficie, borderRadius: 14, borderWidth: 1, borderColor: c.linea, borderLeftWidth: 4, borderLeftColor: MARCA.violeta, overflow: 'hidden' }}>
+            <View key={x.id} style={{ ...estiloTarjeta(c), borderLeftWidth: 4, borderLeftColor: MARCA.violeta }}>
               <Pressable
                 onPress={() => router.push(`/cuestionarios/${x.id}`)}
-                style={({ pressed }) => ({ padding: 14, gap: 4, backgroundColor: pressed ? c.superficie2 : 'transparent' })}
+                style={({ pressed }) => ({ padding: 14, gap: 4, borderTopRightRadius: 18, borderBottomRightRadius: 18, backgroundColor: pressed ? c.superficie2 : 'transparent' })}
               >
                 <Text style={{ color: c.magentaTexto, fontWeight: '800', fontSize: 12, textTransform: 'uppercase' }}>{x.categoria.nombre}</Text>
                 <Texto estilo="subtitulo">{x.titulo}</Texto>

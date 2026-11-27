@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { Link } from 'expo-router'
 import { Lock, User } from 'lucide-react-native'
 import { iniciarSesion, ultimoUsuario } from '../../api/auth'
 import { ProveedorTemaClaro } from '../../tema/claro'
-import { Boton, Casilla, Entrada } from '../../ui'
+import { MARCA } from '../../tema/tema'
+import { Boton, Casilla, Entrada, Text } from '../../ui'
 import { errorContrasena, errorUsuario } from '../../util/validaciones'
-import FondoLogin, { estilos } from './FondoLogin'
+import FondoLogin, { AvisoAcceso } from './FondoLogin'
 
 // Login: nombre de usuario (apellido + inicial del nombre) y contraseña.
 // onIngreso se ejecuta cuando el login sale bien.
@@ -46,7 +47,10 @@ export default function Login({ onIngreso }) {
           etiqueta="Nombre de usuario"
           icono={User}
           value={nombre}
-          onChangeText={setNombre}
+          onChangeText={(t) => {
+            setNombre(t)
+            setError('')
+          }}
           onBlur={tocar('nombre')}
           autoCapitalize="none"
           autoCorrect={false}
@@ -63,7 +67,10 @@ export default function Login({ onIngreso }) {
           icono={Lock}
           contrasena
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(t) => {
+            setPassword(t)
+            setError('')
+          }}
           onBlur={tocar('password')}
           autoCapitalize="none"
           autoCorrect={false}
@@ -75,22 +82,24 @@ export default function Login({ onIngreso }) {
           placeholder="••••••••"
           error={verError('password')}
         />
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2, marginBottom: 18 }}>
           <Casilla marcada={remember} onCambio={setRemember}>
             Recordar
           </Casilla>
           <Link href={{ pathname: '/olvide', params: { usuario: nombre.trim() } }} asChild>
-            <Pressable hitSlop={8}>
-              <Text style={{ color: '#51318f', fontWeight: '600' }}>¿Olvidó su contraseña?</Text>
+            <Pressable hitSlop={8} accessibilityRole="link">
+              <Text style={{ color: MARCA.violeta, fontSize: 14, fontWeight: '700' }}>¿Olvidó su contraseña?</Text>
             </Pressable>
           </Link>
         </View>
-        {error ? (
-          <Text style={estilos.error} accessibilityRole="alert">
-            {error}
-          </Text>
-        ) : null}
-        <Boton titulo={loading ? 'Ingresando…' : 'Iniciar sesión'} onPress={enviar} cargando={loading} grande />
+        <AvisoAcceso>{error}</AvisoAcceso>
+        <Boton
+          titulo={loading ? 'Ingresando…' : 'Iniciar sesión'}
+          onPress={enviar}
+          cargando={loading}
+          grande
+          style={{ alignSelf: 'center', width: '80%', minWidth: 220 }}
+        />
       </FondoLogin>
     </ProveedorTemaClaro>
   )

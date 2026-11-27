@@ -1,8 +1,7 @@
 // Informe PDF de estadísticas de un cuestionario (mismo contenido que el de la web)
-import { compartirPdf, esc, ESTILOS, logoBase64 } from '../../util/pdf'
+import { compartirPdf, esc, ESTILOS, logoBase64, TITULOS_EXPLICACION } from '../../util/pdf'
 
 const TIPOS = { una_opcion: 'Una sola opción', opcion_multiple: 'Opción múltiple' }
-const TITULOS_EXPLICACION = ['Cómo leer este gráfico', 'Qué muestran los datos']
 
 export function tablaHtml(opciones, total, acumuladas, f) {
   const acumulado = opciones.map((_, i) => opciones.slice(0, i + 1).reduce((a, o) => a + o.cantidad, 0))

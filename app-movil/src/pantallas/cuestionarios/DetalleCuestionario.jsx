@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { AppState, Pressable, ScrollView, Text, View } from 'react-native'
+import { AppState, Pressable, ScrollView, View } from 'react-native'
 import { router } from 'expo-router'
 import { ArrowLeft, FileDown } from 'lucide-react-native'
 import { pedirImagen } from '../../api/cliente'
 import { obtenerEstadisticas } from '../../api/encuestas'
 import { MARCA, useTema } from '../../tema/tema'
-import { Acciones, Boton, Casilla, Fila, Modal, Texto, TextoError, VacioTarjeta } from '../../ui'
+import { Acciones, Boton, Casilla, Fila, Modal, Texto, TextoError, VacioTarjeta, Text, estiloTarjeta } from '../../ui'
 import ImagenApi from '../../ui/ImagenApi'
 import { guardar, leer } from '../../util/almacen'
 import { disponibles, f, plural, porDefecto } from './catalogoGraficos'
@@ -112,7 +112,7 @@ function EstadisticaPregunta({ cuestionario, pregunta, numero, elegido, onCambio
   const { c } = useTema()
   const cuantitativa = pregunta.variable === 'cuantitativa'
   return (
-    <View style={{ backgroundColor: c.superficie, borderRadius: 14, borderWidth: 1, borderColor: c.linea, padding: 14, gap: 10 }}>
+    <View style={{ ...estiloTarjeta(c), padding: 14, gap: 10 }}>
       <Fila gap={10} style={{ alignItems: 'flex-start' }}>
         <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: MARCA.violeta, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ color: '#fff', fontWeight: '800' }}>{numero}</Text>
@@ -348,7 +348,7 @@ export default function DetalleCuestionario({ id }) {
           <VacioTarjeta>Cargando…</VacioTarjeta>
         ) : (
           <>
-            <View style={{ backgroundColor: c.superficie, borderRadius: 14, borderTopWidth: 8, borderTopColor: MARCA.violeta, padding: 16, gap: 8, borderWidth: 1, borderColor: c.linea }}>
+            <View style={{ ...estiloTarjeta(c), borderTopWidth: 8, borderTopColor: MARCA.violeta, padding: 16, gap: 8 }}>
               <Text style={{ color: c.magentaTexto, fontWeight: '800', fontSize: 12, textTransform: 'uppercase' }}>{datos.cuestionario.categoria}</Text>
               <Texto estilo="titulo" style={{ fontSize: 22 }}>
                 {datos.cuestionario.titulo}

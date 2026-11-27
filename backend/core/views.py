@@ -32,7 +32,7 @@ def usuario_json(request):
         "nombre": usuario.first_name,
         "apellido": usuario.last_name,
         "es_superusuario": usuario.is_superuser,
-        "grupos": list(usuario.groups.values_list("name", flat=True)),
+        "grupos": [usuario.grupo.name] if usuario.grupo_id else [],
         # Permisos de Django ("core.add_cuestionario", …): el frontend arma el menú con esto
         "permisos": sorted(permisos_de(usuario)),
         "puede_elegir_campana": puede_elegir_campana(usuario),
